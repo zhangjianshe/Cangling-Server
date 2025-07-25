@@ -200,10 +200,12 @@ jobs:
               Write-Error "Certificate password secret (CERTIFICATE_PASSWORD) is empty. Please check your GitHub Secrets."
               exit 1
           }
+          
+          $pfxFilePath = Join-Path (Get-Location) "certificate.pfx"
 
           if (-not (Test-Path "certificate.pfx")) {
               $certBytes = [System.Convert]::FromBase64String($base64Cert)
-              [System.IO.File]::WriteAllBytes("certificate.pfx", $certBytes)
+              [System.IO.File]::WriteAllBytes($pfxFilePath, $certBytes)
               Write-Host "certificate.pfx created successfully."
           } else {
               Write-Host "certificate.pfx already exists."
@@ -211,7 +213,7 @@ jobs:
 
           Write-Host "Attempting to import certificate.pfx..."
           try {
-              $importedCert = Import-PfxCertificate -FilePath "certificate.pfx" -CertStoreLocation Cert:\CurrentUser\My -Password (ConvertTo-SecureString -String $certPassword -AsPlainText -Force) -ErrorAction Stop
+              $importedCert = Import-PfxCertificate -FilePath $pfxFilePath -CertStoreLocation Cert:\CurrentUser\My -Password (ConvertTo-SecureString -String $certPassword -AsPlainText -Force) -ErrorAction Stop
               Write-Host "Certificate imported successfully."
               echo "thumbprint=$($importedCert.Thumbprint)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           } catch {
@@ -219,7 +221,7 @@ jobs:
               exit 1
           }
 
-          Remove-Item certificate.pfx # Clean up the PFX file from disk immediately after import
+          Remove-Item $pfxFilePath # Clean up the PFX file from disk immediately after import
 
           Write-Host "Listing certificates in Cert:\CurrentUser\My (for verification):"
           Get-ChildItem Cert:\CurrentUser\My | ForEach-Object {
