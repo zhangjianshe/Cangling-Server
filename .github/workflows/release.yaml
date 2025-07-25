@@ -184,7 +184,7 @@ jobs:
           $env:EXT=".exe"
           $env:OUTPUT_FILE="${env:APP_NAME}${env:EXT}" 
           Write-Host "Building for $env:GOOS/$env:GOARCH as $env:OUTPUT_FILE"
-          go build -ldflags="-s -w  -X main.GitHash=${GITHUB_SHA} -X main.BuildTime=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" -o "$OUTPUT_FILE" ./main.go
+          go build -ldflags="-s -w  -X main.GitHash=${GITHUB_SHA} -X main.BuildTime=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" -o "$OUTPUT_FILE" .
       
           ls
           echo "BUILT_BINARY_WINDOWS_AMD64=$env:OUTPUT_FILE" | Out-File -FilePath $env:GITHUB_ENV -Append
