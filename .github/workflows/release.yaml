@@ -73,7 +73,7 @@ jobs:
           path: |
             ~/go/pkg/mod
             ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-go-${{ hashFiles('cs-server/**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
      
@@ -165,7 +165,7 @@ jobs:
           path: |
             ~/go/pkg/mod
             ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-go-${{ hashFiles('cs-server/**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
 
@@ -186,7 +186,7 @@ jobs:
           Write-Host "Building for $env:GOOS/$env:GOARCH as $env:OUTPUT_FILE"
           go build -ldflags="-s -w  -X main.GitHash=${GITHUB_SHA} -X main.BuildTime=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" -o "$OUTPUT_FILE" ./main.go
       
-          
+          ls
           echo "BUILT_BINARY_WINDOWS_AMD64=$env:OUTPUT_FILE" | Out-File -FilePath $env:GITHUB_ENV -Append
         shell: powershell
 
