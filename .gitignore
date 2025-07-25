@@ -37,3 +37,4 @@ build/
 !**/src/main/**/node_modules/**/node_modules
 **/*.iml
 .idea
+/.idea/
