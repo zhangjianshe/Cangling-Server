@@ -36,7 +36,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: gwt-output
-          path: target/classes/static/cs
+          path: cs-front/target/classes/static/cs
           retention-days: 1
 
   build-linux:
