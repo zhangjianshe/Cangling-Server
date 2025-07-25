@@ -31,12 +31,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
       - name: Build GWT project with Maven
-        run: cd cs-front && mvn clean compile gwt:compile package install
+        run: |
+          cd cs-front 
+          mvn clean compile gwt:compile package install
+          cd ../
+          ls cs-server/static/cs
+
       - name: Upload GWT artifact
         uses: actions/upload-artifact@v4
         with:
           name: gwt-output
-          path: cs-front/target/classes/static/cs
+          path: cs-server/static/cs
           retention-days: 1
 
   build-linux:
