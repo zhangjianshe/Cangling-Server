@@ -1,0 +1,41 @@
+<ui:UiBinder xmlns:ui='urn:ui:com.google.gwt.uibinder'
+             xmlns:g='urn:import:com.google.gwt.user.client.ui'
+             xmlns:component="urn:import:cn.cangling.cs.client.component"
+             xmlns:repo="urn:import:cn.cangling.cs.client.repo">
+    <ui:style>
+        .lb {
+            font-weight: bold;
+            font-size: 1.3rem;
+            color: white;
+        }
+
+        .top {
+            background-color: rgba(43, 45, 86, 0.9);
+        }
+
+        .version {
+            color: #d0d0d0;
+            font-size: 0.9rem;
+            margin-top: 4px;
+        }
+        .logo {
+            width: 60px;
+            height: 60px;
+        }</ui:style>
+    <g:DockLayoutPanel ui:field="root">
+        <g:north size="80">
+            <g:HorizontalPanel width="100%" verticalAlignment="middle" spacing="10" styleName="{style.top}">
+                <g:cell width="60px">
+                    <g:Image ui:field="logo" addStyleNames="{style.logo}" url="static/images/logo.svg"/>
+                </g:cell>
+                <g:VerticalPanel horizontalAlignment="left">
+                    <g:Label ui:field="lbName" styleName="{style.lb}">SirServer</g:Label>
+                    <g:Label ui:field="lbVersion" addStyleNames="{style.version}"/>
+                </g:VerticalPanel>
+            </g:HorizontalPanel>
+        </g:north>
+        <g:center>
+            <repo:RepoFrame ui:field="repoFrame"/>
+        </g:center>
+    </g:DockLayoutPanel>
+</ui:UiBinder>

@@ -33,3 +33,7 @@ build/
 .vscode/
 /src/main/resources/static/composer/
 
+***/src/main/**/node_modules/
+!**/src/main/**/node_modules/**/node_modules
+**/*.iml
+.idea

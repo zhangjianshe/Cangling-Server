@@ -1,0 +1,66 @@
+@eval ITEM_BK "var(--item-bk-color)";
+@eval ITEM_BK_HOVER "var(--item-bk-color-hover)";
+@eval ITEM_BK_ACTIVE "var(--item-bk-color-active)";
+@eval ITEM_TEXT "var(--item-text-color)";
+@eval ITEM_TEXT_HOVER "var(--item-text-color-hover)";
+@eval ITEM_TEXT_ACTIVE "var(--item-text-color-active)";
+@eval ITEM_TEXT2 "var(--item-text2-color)";
+@eval ITEM_TEXT2_HOVER "var(--item-text2-color-hover)";
+@eval ITEM_TEXT2_ACTIVE "var(--item-text2-color-active)";
+@eval ITEM_BORDER_RADIUS "var(--item-border-radius)";
+
+@eval PANEL_BK_COLOR "var(--panel-bk-color)";
+@eval PANEL_BORDER "var(--panel-border)";
+@eval PANEL_BORDER_HOVER "var(--panel-border)";
+@eval PANEL_BORDER_RADIUS "var(--panel-border-radius)";
+
+@external panel;
+.panel{
+    background-color: PANEL_BK_COLOR;
+}
+
+img {
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+@external .item;
+.item{
+    display: flex;
+    padding: 4px 8px;
+    align-items: center;
+    justify-content: space-between;
+    background-color: ITEM_BK;
+    border-radius: ITEM_BORDER_RADIUS;
+    height: 38px;
+}
+.item:hover{
+    background-color: ITEM_BK_HOVER;
+}
+.item:active{
+    background-color: ITEM_BK_ACTIVE;
+}
+@external .text;
+.text{
+    color: ITEM_TEXT;
+    cursor: pointer;
+    user-select: none;
+}
+.text:hover{
+    color: ITEM_TEXT_HOVER;
+}
+.text:active{
+    color: ITEM_TEXT_ACTIVE;
+}
+@external .text2;
+.text2{
+    color: ITEM_TEXT2;
+    cursor: pointer;
+    user-select: none;
+}
+.text2:hover{
+    color: ITEM_TEXT2_HOVER;
+}
+.text2:active{
+    color: ITEM_TEXT2_ACTIVE;
+}

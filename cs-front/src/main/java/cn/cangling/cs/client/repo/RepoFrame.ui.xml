@@ -1,0 +1,17 @@
+<ui:UiBinder xmlns:ui='urn:ui:com.google.gwt.uibinder'
+             xmlns:g='urn:import:com.google.gwt.user.client.ui' xmlns:repo="urn:import:cn.cangling.cs.client.repo"
+             xmlns:map="urn:import:cn.cangling.cs.client.component.map">
+    <ui:style>
+
+    </ui:style>
+    <g:DockLayoutPanel>
+        <g:west size="300">
+            <g:ScrollPanel addStyleNames="panel">
+                <repo:RepositoryList width="100%" ui:field="repoList"/>
+            </g:ScrollPanel>
+        </g:west>
+        <g:center>
+            <map:CustomMap ui:field="map"/>
+        </g:center>
+    </g:DockLayoutPanel>
+</ui:UiBinder>

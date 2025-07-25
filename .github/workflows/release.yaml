@@ -1,0 +1,484 @@
+# .github/workflows/release.yml
+
+# IMPORTANT: Ensure ALL indentation uses EXACTLY 2 spaces.
+# Do NOT use tabs, as they will cause YAML parsing errors.
+
+name: Go Release with Signing (Windows & Linux)
+
+# This workflow runs when a new tag is pushed (e.g., v1.0.0)
+on:
+  push:
+    tags:
+      - 'v*.*.*' # Trigger on tags like v1.0.0, v1.2.3, etc.
+
+jobs:
+  # Job for GWT build
+  compile-gwt:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin' # Or 'adopt', 'oracle', etc.
+          java-version: '11'      # Or your project's Java version
+      - name: Cache Maven dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+      - name: Build GWT project with Maven
+        run: cd cs-front && mvn clean compile gwt:compile package install
+      - name: Upload GWT artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: gwt-output
+          path: target/classes/static/cs
+          retention-days: 1
+
+  build-linux:
+    runs-on: ubuntu-latest
+    needs: [compile-gwt]
+    outputs:
+      # Changed to output individual archive paths (filenames)
+      linux_amd64_archive: SirServer-linux-amd64.tar.gz
+      linux_arm64_archive: SirServer-linux-arm64.tar.gz
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Change current directory
+        run: cd cis-server
+      - name: fetch gwt artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: gwt-output
+          path: static
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+     
+
+      - name: Get tag version
+        id: get_tag_version # Added ID to get tag output
+        run: echo "TAG_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Build Linux (AMD64)
+        env:
+          GOOS: linux
+          GOARCH: amd64
+        run: |
+          APP_NAME="SirServer"
+          OUTPUT_FILE="${APP_NAME}" # <--- CHANGED: Binary will now be named 'SirServer'
+          echo "Building for $GOOS/$GOARCH as $OUTPUT_FILE"
+          # Embed version ,GitHash and BuildTime into the Go binary
+          go build -ldflags="-s -w -X main.AppVersion=${{ steps.get_tag_version.outputs.TAG_VERSION }} -X main.GitHash=${GITHUB_SHA} -X main.BuildTime=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" -o "$OUTPUT_FILE" ./main.go
+          
+          echo "BUILT_BINARY_LINUX_AMD64=$OUTPUT_FILE" >> $GITHUB_ENV # Store for packaging
+
+      - name: Build Linux (ARM64)
+        env:
+          GOOS: linux
+          GOARCH: arm64
+        run: |
+          APP_NAME="SirServer"
+          OUTPUT_FILE="${APP_NAME}" # <--- CHANGED: Binary will now be named 'SirServer'
+          echo "Building for $GOOS/$GOARCH as $OUTPUT_FILE"
+          # Embed the version into the Go binary
+          go build -ldflags="-s -w -X main.AppVersion=${{ steps.get_tag_version.outputs.TAG_VERSION }} -X main.GitHash=${GITHUB_SHA} -X main.BuildTime=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" -o "$OUTPUT_FILE" ./main.go
+          
+          echo "BUILT_BINARY_LINUX_ARM64=$OUTPUT_FILE" >> $GITHUB_ENV # Store for packaging
+
+      - name: Package Linux binaries
+        id: archive
+        run: |
+          APP_NAME="SirServer"
+          ARCHIVE_AMD64="${APP_NAME}-linux-amd64.tar.gz"
+          ARCHIVE_ARM64="${APP_NAME}-linux-arm64.tar.gz"
+
+          # Create tar.gz archives. The variables BUILT_BINARY_LINUX_AMD64/ARM64
+          # now correctly point to just "SirServer".
+          tar -czvf "$ARCHIVE_AMD64" "${{ env.BUILT_BINARY_LINUX_AMD64 }}"
+          tar -czvf "$ARCHIVE_ARM64" "${{ env.BUILT_BINARY_LINUX_ARM64 }}"
+
+          # Output paths individually for the create-release job (these are now just filenames)
+          echo "amd64_archive_path=$ARCHIVE_AMD64" >> $GITHUB_OUTPUT
+          echo "arm64_archive_path=$ARCHIVE_ARM64" >> $GITHUB_OUTPUT
+
+      - name: Upload Linux Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-binaries
+          path: |
+            SirServer-linux-amd64.tar.gz
+            SirServer-linux-arm64.tar.gz
+          retention-days: 1 # Artifacts are temporary for inter-job transfer
+
+  # Job for Windows builds and Authenticode signing
+  build-windows:
+    needs: [compile-gwt]
+    runs-on: windows-latest # Crucial: Use a Windows runner for signtool.exe
+    outputs:
+      windows_archive: SirServer-windows-amd64.zip # Output the filename directly
+      certificate_thumbprint: ${{ steps.import_cert.outputs.thumbprint }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Change current directory
+        run: cd cis-server
+      - name: fetch gwt artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: gwt-output
+          path: static
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Get tag version
+        id: get_tag_version # Added ID to get tag output
+        run: echo "TAG_VERSION=${GITHUB_REF#refs/tags/}" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+        shell: powershell
+
+      - name: Build Windows (AMD64)
+        env:
+          GOOS: windows
+          GOARCH: amd64
+        run: |
+          $env:APP_NAME="SirServer"
+          $env:EXT=".exe"
+          $env:OUTPUT_FILE="${env:APP_NAME}${env:EXT}" 
+          Write-Host "Building for $env:GOOS/$env:GOARCH as $env:OUTPUT_FILE"
+          go build -ldflags="-s -w  -X main.GitHash=${GITHUB_SHA} -X main.BuildTime=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" -o "$OUTPUT_FILE" ./main.go
+      
+          go build -ldflags "-s -w " -o "$env:OUTPUT_FILE" ./main.go
+          echo "BUILT_BINARY_WINDOWS_AMD64=$env:OUTPUT_FILE" | Out-File -FilePath $env:GITHUB_ENV -Append
+        shell: powershell
+
+      - name: Decode and Install Certificate (Windows)
+        id: import_cert
+        run: |
+          $base64Cert = "${{ secrets.APP_SIGNING_CERTIFICATE_BASE64 }}"
+          $certPassword = "${{ secrets.CERTIFICATE_PASSWORD }}"
+
+          if ([string]::IsNullOrEmpty($certPassword)) {
+              Write-Error "Certificate password secret (CERTIFICATE_PASSWORD) is empty. Please check your GitHub Secrets."
+              exit 1
+          }
+
+          if (-not (Test-Path "certificate.pfx")) {
+              $certBytes = [System.Convert]::FromBase64String($base64Cert)
+              [System.IO.File]::WriteAllBytes("certificate.pfx", $certBytes)
+              Write-Host "certificate.pfx created successfully."
+          } else {
+              Write-Host "certificate.pfx already exists."
+          }
+
+          Write-Host "Attempting to import certificate.pfx..."
+          try {
+              $importedCert = Import-PfxCertificate -FilePath "certificate.pfx" -CertStoreLocation Cert:\CurrentUser\My -Password (ConvertTo-SecureString -String $certPassword -AsPlainText -Force) -ErrorAction Stop
+              Write-Host "Certificate imported successfully."
+              echo "thumbprint=$($importedCert.Thumbprint)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          } catch {
+              Write-Error "Failed to import certificate: $($_.Exception.Message)"
+              exit 1
+          }
+
+          Remove-Item certificate.pfx # Clean up the PFX file from disk immediately after import
+
+          Write-Host "Listing certificates in Cert:\CurrentUser\My (for verification):"
+          Get-ChildItem Cert:\CurrentUser\My | ForEach-Object {
+              Write-Host "  Subject: $($_.Subject)"
+              Write-Host "  Thumbprint: $($_.Thumbprint)"
+              Write-Host "  FriendlyName: $($_.FriendlyName)"
+              Write-Host "  Issuer: $($_.Issuer)"
+              Write-Host "  NotAfter: $($_.NotAfter)"
+              Write-Host "---"
+          }
+        shell: powershell
+
+      - name: Sign Windows Executable
+        run: |
+          $signtoolPath = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\" -Filter "signtool.exe" -Recurse | Select-Object -ExpandProperty FullName -First 1
+          if (-not $signtoolPath) {
+              Write-Error "Signtool.exe not found. Ensure Windows SDK Signing Tools are installed."
+              exit 1
+          }
+
+          $thumbprint = "${{ steps.import_cert.outputs.thumbprint }}"
+          if ([string]::IsNullOrEmpty($thumbprint)) {
+              Write-Error "Certificate thumbprint was not obtained from the previous step. Cannot sign."
+              exit 1
+          }
+
+          $cert = Get-ChildItem Cert:\CurrentUser\My | Where-Object {$_.Thumbprint -eq $thumbprint}
+          if (-not $cert) {
+              Write-Error "Certificate with thumbprint '$thumbprint' not found in store. This should not happen if previous step succeeded."
+              exit 1
+          }
+          if ($cert.Count -gt 1) {
+              Write-Warning "Multiple certificates found matching the thumbprint. This is unusual; using the first one."
+              $cert = $cert | Select-Object -First 1
+          }
+          Write-Host "Found certificate with Subject: $($cert.Subject) and Thumbprint: $thumbprint"
+
+          $binaryToSign = "${{ env.BUILT_BINARY_WINDOWS_AMD64 }}"
+          Write-Host "Signing $binaryToSign with thumbprint $thumbprint"
+
+          & "$signtoolPath" sign /s My /sha1 $thumbprint /t http://timestamp.digicert.com /fd sha256 /v $binaryToSign
+          if ($LASTEXITCODE -ne 0) {
+              Write-Error "Signtool failed with exit code $LASTEXITCODE"
+              exit 1
+          }
+          Write-Host "Successfully signed $binaryToSign"
+        shell: powershell
+
+      - name: Package Windows binary
+        id: archive
+        run: |
+          $env:APP_NAME="SirServer"
+          $env:ARCHIVE_NAME="${env:APP_NAME}-windows-amd64.zip"
+          $binaryToArchive = "${{ env.BUILT_BINARY_WINDOWS_AMD64 }}"
+
+          Compress-Archive -Path $binaryToArchive -DestinationPath $env:ARCHIVE_NAME -Force
+          Write-Host "Created archive: $env:ARCHIVE_NAME"
+
+          echo "archive_path=$env:ARCHIVE_NAME" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+        shell: powershell
+
+      - name: Upload Windows Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-binary
+          path: SirServer-windows-amd64.zip
+          retention-days: 1
+
+  # Job to create the GitHub Release and upload all artifacts
+  create-release:
+    runs-on: ubuntu-latest
+    needs: [build-linux, build-windows] # This job depends on both build jobs
+    permissions:
+      contents: write # Needed for creating releases and uploading assets
+      packages: write # If you also push to GitHub Packages
+
+    steps:
+      - name: Get tag name
+        id: get_tag
+        run: echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Delete existing GitHub Release if it exists
+        uses: actions/github-script@v7
+        id: delete_release
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const tag = context.ref.replace('refs/tags/', '');
+            try {
+              const { data: releases } = await github.rest.repos.listReleases({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+              });
+
+              const existingRelease = releases.find(release => release.tag_name === tag);
+
+              if (existingRelease) {
+                console.log(`Found existing release for tag ${tag} with ID ${existingRelease.id}. Deleting...`);
+                await github.rest.repos.deleteRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  release_id: existingRelease.id,
+                });
+                console.log(`Release ${tag} deleted successfully. Waiting for 5 seconds to ensure propagation...`);
+                await new Promise(resolve => setTimeout(resolve, 5000)); // Wait for 5 seconds
+              } else {
+                console.log(`No existing release found for tag ${tag}.`);
+              }
+            } catch (error) {
+              console.error(`Error checking/deleting release: ${error.message}`);
+            }
+
+      - name: Download Linux Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-binaries
+          path: . # Downloads to the current job's working directory
+
+      - name: Download Windows Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-binary
+          path: . # Downloads to the current job's working directory
+
+      - name: Install jq (JSON processor)
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Generate update info JSON
+        id: generate_json
+        run: |
+          APP_VERSION="${{ steps.get_tag.outputs.TAG_NAME }}" # Use the tag name directly for APP_VERSION
+          MIN_VERSION="0.0.30" # IMPORTANT: Update this value as needed
+
+          # --- CRITICAL NOTE ON 'id' FIELDS ---
+          # These 'id' values are placeholders. They represent unique identifiers
+          # that your custom file server (lc.cangling.cn:22002) would provide
+          # after you upload the actual binary files to it.
+          #
+          # To make this fully automated and accurate, you would need to:
+          # 1. Implement a step that *uploads* the generated binaries
+          #    (SirServer-linux-amd64.tar.gz, etc.) to your lc.cangling.cn file server's API.
+          # 2. This upload process must return the 'id' for each file.
+          # 3. Capture these returned 'id's into GitHub Actions outputs or environment variables.
+          # 4. Replace the placeholder strings below (e.g., "YOUR_LINUX_AMD64_ID_HERE")
+          #    with those dynamically captured 'id's.
+          #
+          # Without an API to get these 'id's automatically, these remain placeholders
+          # that you would need to manually fill in your update_info.json after deployment.
+
+          # Define filenames (these match the output filenames from build jobs)
+          LINUX_AMD64_FILENAME="SirServer-linux-amd64.tar.gz"
+          LINUX_ARM64_FILENAME="SirServer-linux-arm64.tar.gz"
+          WINDOWS_AMD64_FILENAME="SirServer-windows-amd64.zip"
+
+          jq -n \
+            --arg version "$APP_VERSION" \
+            --arg min_version "$MIN_VERSION" \
+            --arg linux_amd64_filename "$LINUX_AMD64_FILENAME" \
+            --arg linux_amd64_id "YOUR_LINUX_AMD64_ID_HERE" \
+            --arg linux_arm64_filename "$LINUX_ARM64_FILENAME" \
+            --arg linux_arm64_id "YOUR_LINUX_ARM64_ID_HERE" \
+            --arg windows_amd64_filename "$WINDOWS_AMD64_FILENAME" \
+            --arg windows_amd64_id "YOUR_WINDOWS_AMD64_ID_HERE" \
+            '{
+              latest_version: $version,
+              min_version: $min_version,
+              downloads: [
+                {
+                  os: "linux",
+                  arch: "amd64",
+                  filename: $linux_amd64_filename,
+                  id: $linux_amd64_id
+                },
+                {
+                  os: "linux",
+                  arch: "arm64",
+                  filename: $linux_arm64_filename,
+                  id: $linux_arm64_id
+                },
+                {
+                  os: "windows",
+                  arch: "amd64",
+                  filename: $windows_amd64_filename,
+                  id: $windows_amd64_id
+                }
+              ]
+            }' > version.json
+
+          echo "Generated update_info.json content:"
+          cat version.json
+
+      - name: Create and Upload GitHub Release Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ needs.build-linux.outputs.linux_amd64_archive }}
+            ${{ needs.build-linux.outputs.linux_arm64_archive }}
+            ${{ needs.build-windows.outputs.windows_archive }}
+            update_info.json # Also upload the generated JSON file
+          draft: false
+          prerelease: false
+          name: Release ${{ steps.get_tag.outputs.TAG_NAME }}
+          tag_name: ${{ steps.get_tag.outputs.TAG_NAME }}
+          make_latest: true
+          body: |
+            # Release Notes for ${{ steps.get_tag.outputs.TAG_NAME }}
+
+            This release includes binaries for various platforms, signed where applicable.
+
+            **Download Links (from GitHub Release Assets):**
+            - [Linux AMD64](${{ github.server_url }}/${{ github.repository }}/releases/download/${{ steps.get_tag.outputs.TAG_NAME }}/SirServer-linux-amd64.tar.gz)
+            - [Linux ARM64](${{ github.server_url }}/${{ github.repository }}/releases/download/${{ steps.get_tag.outputs.TAG_NAME }}/SirServer-linux-arm64.tar.gz)
+            - [Windows AMD64](${{ github.server_url }}/${{ github.repository }}/releases/download/${{ steps.get_tag.outputs.TAG_NAME }}/SirServer-windows-amd64.zip)
+
+            **Update Info JSON:**
+            The `update_info.json` file is attached below.
+            **IMPORTANT:** The 'id' fields in this JSON are placeholders.
+            You must obtain the actual IDs from your custom file server (e.g., lc.cangling.cn)
+            after uploading the binaries there, and update the JSON file on your server accordingly.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Artifacts to ib.cangling.cn
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SSH_PORT: 22001
+          RELEASE_TAG: ${{ steps.get_tag.outputs.TAG_NAME }}
+          BINARIES_TARGET_PATH: "/mnt/cangling/lincao/data/personal/1/SirServer/${{ steps.get_tag.outputs.TAG_NAME }}"
+          JSON_TARGET_PATH: "/mnt/cangling/lincao/data/personal/1/SirServer"
+        run: |
+          # Create a file for the private key
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" | base64 --decode > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          # Add server to known hosts to avoid strict host key checking issues
+          ssh-keyscan -p "$SSH_PORT" -H "$SERVER_HOST" >> ~/.ssh/known_hosts
+
+          # Get the list of files to upload (these are downloaded artifacts)
+          LINUX_AMD64_FILE="${{ needs.build-linux.outputs.linux_amd64_archive }}"
+          LINUX_ARM64_FILE="${{ needs.build-linux.outputs.linux_arm64_archive }}"
+          WINDOWS_FILE="${{ needs.build-windows.outputs.windows_archive }}"
+          JSON_FILE="version.json" # The generated JSON file
+
+          # Check if files exist before trying to upload
+          ls -lh "$LINUX_AMD64_FILE" "$LINUX_ARM64_FILE" "$WINDOWS_FILE" "$JSON_FILE" || { echo "One or more artifact files not found!"; exit 1; }
+
+          # Create target directories on remote server (if they don't exist)
+          ssh -i ~/.ssh/id_ed25519 -p $SSH_PORT "$SERVER_USER@$SERVER_HOST" "mkdir -p $BINARIES_TARGET_PATH && mkdir -p $JSON_TARGET_PATH" || { echo "Failed to create remote directories!"; exit 1; }
+
+          # Define the SSH command for rsync and direct ssh calls
+          RSYNC_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -p $SSH_PORT -o StrictHostKeyChecking=no"
+
+          echo "Uploading binaries to $SERVER_HOST:$BINARIES_TARGET_PATH"
+          rsync -avz --progress -e "$RSYNC_SSH_COMMAND" "$LINUX_AMD64_FILE" "$SERVER_USER@$SERVER_HOST:$BINARIES_TARGET_PATH/" || { echo "Rsync of $LINUX_AMD64_FILE failed!"; exit 1; }
+          rsync -avz --progress -e "$RSYNC_SSH_COMMAND" "$LINUX_ARM64_FILE" "$SERVER_USER@$SERVER_HOST:$BINARIES_TARGET_PATH/" || { echo "Rsync of $LINUX_ARM64_FILE failed!"; exit 1; }
+          rsync -avz --progress -e "$RSYNC_SSH_COMMAND" "$WINDOWS_FILE" "$SERVER_USER@$SERVER_HOST:$BINARIES_TARGET_PATH/" || { echo "Rsync of $WINDOWS_FILE failed!"; exit 1; }
+
+          echo "Uploading $JSON_FILE to $SERVER_HOST:$JSON_TARGET_PATH"
+          rsync -avz --progress -e "$RSYNC_SSH_COMMAND" "$JSON_FILE" "$SERVER_USER@$SERVER_HOST:$JSON_TARGET_PATH/" || { echo "Rsync of $JSON_FILE failed!"; exit 1; }
+          
+          
+          echo "All artifacts uploaded to $SERVER_HOST."
+          rm ~/.ssh/id_ed25519 # Clean up SSH key
+        shell: bash

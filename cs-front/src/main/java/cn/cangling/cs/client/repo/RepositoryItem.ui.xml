@@ -1,0 +1,9 @@
+<ui:UiBinder xmlns:ui='urn:ui:com.google.gwt.uibinder'
+             xmlns:g='urn:import:com.google.gwt.user.client.ui'>
+    <ui:style>
+    </ui:style>
+    <g:HTMLPanel styleName="item">
+        <g:Label ui:field="lbName" styleName="text">Name</g:Label>
+        <g:Label ui:field="lbSize" styleName="text2">size</g:Label>
+    </g:HTMLPanel>
+</ui:UiBinder>
