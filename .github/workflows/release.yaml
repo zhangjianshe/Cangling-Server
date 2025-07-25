@@ -88,6 +88,8 @@ jobs:
           GOARCH: amd64
         run: |
           cd cs-server
+          ls static/
+          ls static/cs
           APP_NAME="SirServer"
           OUTPUT_FILE="${APP_NAME}" 
           ARCHIVE_AMD64="${APP_NAME}-linux-amd64.tar.gz"
