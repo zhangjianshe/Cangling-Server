@@ -60,7 +60,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: gwt-output
-          path: cs-server/static
+          path: cs-server/static/cs
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -88,8 +88,6 @@ jobs:
           GOARCH: amd64
         run: |
           cd cs-server
-          ls static/
-          ls static/cs
           APP_NAME="SirServer"
           OUTPUT_FILE="${APP_NAME}" 
           ARCHIVE_AMD64="${APP_NAME}-linux-amd64.tar.gz"
@@ -141,7 +139,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: gwt-output
-          path: cs-server/static
+          path: cs-server/static/cs
 
       - name: Set up Go
         uses: actions/setup-go@v5
