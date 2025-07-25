@@ -57,12 +57,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Change current directory
-        run: cd cis-server
+        run: cd cs-server
       - name: fetch gwt artifact
         uses: actions/download-artifact@v4
         with:
           name: gwt-output
-          path: static
+          path: cs-server/static
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -89,6 +89,7 @@ jobs:
           GOOS: linux
           GOARCH: amd64
         run: |
+          cd cs-server
           APP_NAME="SirServer"
           OUTPUT_FILE="${APP_NAME}" # <--- CHANGED: Binary will now be named 'SirServer'
           echo "Building for $GOOS/$GOARCH as $OUTPUT_FILE"
@@ -102,6 +103,7 @@ jobs:
           GOOS: linux
           GOARCH: arm64
         run: |
+          cd cs-server
           APP_NAME="SirServer"
           OUTPUT_FILE="${APP_NAME}" # <--- CHANGED: Binary will now be named 'SirServer'
           echo "Building for $GOOS/$GOARCH as $OUTPUT_FILE"
@@ -147,13 +149,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Change current directory
-        run: cd cis-server
+
       - name: fetch gwt artifact
         uses: actions/download-artifact@v4
         with:
           name: gwt-output
-          path: static
+          path: cs-server/static
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -180,6 +181,7 @@ jobs:
           GOOS: windows
           GOARCH: amd64
         run: |
+          cd cs-server
           $env:APP_NAME="SirServer"
           $env:EXT=".exe"
           $env:OUTPUT_FILE="${env:APP_NAME}${env:EXT}" 
