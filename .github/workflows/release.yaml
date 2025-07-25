@@ -193,7 +193,6 @@ jobs:
       - name: Decode and Install Certificate (Windows)
         id: import_cert
         run: |
-          cd cs-server
           $base64Cert = "${{ secrets.APP_SIGNING_CERTIFICATE_BASE64 }}"
           $certPassword = "${{ secrets.CERTIFICATE_PASSWORD }}"
 
@@ -235,7 +234,6 @@ jobs:
 
       - name: Sign Windows Executable
         run: |
-          cd cs-server
           $signtoolPath = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\" -Filter "signtool.exe" -Recurse | Select-Object -ExpandProperty FullName -First 1
           if (-not $signtoolPath) {
               Write-Error "Signtool.exe not found. Ensure Windows SDK Signing Tools are installed."
@@ -259,7 +257,7 @@ jobs:
           }
           Write-Host "Found certificate with Subject: $($cert.Subject) and Thumbprint: $thumbprint"
 
-          $binaryToSign = "${{ env.BUILT_BINARY_WINDOWS_AMD64 }}"
+          $binaryToSign = "cs-server\\${{ env.BUILT_BINARY_WINDOWS_AMD64 }}"
           Write-Host "Signing $binaryToSign with thumbprint $thumbprint"
 
           & "$signtoolPath" sign /s My /sha1 $thumbprint /t http://timestamp.digicert.com /fd sha256 /v $binaryToSign
@@ -273,10 +271,9 @@ jobs:
       - name: Package Windows binary
         id: archive
         run: |
-          cd cs-server
           $env:APP_NAME="SirServer"
           $env:ARCHIVE_NAME="${env:APP_NAME}-windows-amd64.zip"
-          $binaryToArchive = "${{ env.BUILT_BINARY_WINDOWS_AMD64 }}"
+          $binaryToArchive = "cs-server\\${{ env.BUILT_BINARY_WINDOWS_AMD64 }}"
 
           Compress-Archive -Path $binaryToArchive -DestinationPath $env:ARCHIVE_NAME -Force
           Write-Host "Created archive: $env:ARCHIVE_NAME"
@@ -288,7 +285,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-binary
-          path: cs-server/SirServer-windows-amd64.zip
+          path: cs-server\\SirServer-windows-amd64.zip
           retention-days: 1
 
   # Job to create the GitHub Release and upload all artifacts
