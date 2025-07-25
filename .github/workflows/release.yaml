@@ -89,11 +89,13 @@ jobs:
         run: |
           cd cs-server
           APP_NAME="SirServer"
-          OUTPUT_FILE="AMD_${APP_NAME}" 
+          OUTPUT_FILE="${APP_NAME}" 
+          ARCHIVE_AMD64="${APP_NAME}-linux-amd64.tar.gz"
           echo "Building for $GOOS/$GOARCH as $OUTPUT_FILE"
           go build -ldflags="-s -w -X main.AppVersion=${{ steps.get_tag_version.outputs.TAG_VERSION }} -X main.GitHash=${GITHUB_SHA} -X main.BuildTime=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" -o "$OUTPUT_FILE" ./main.go
           
-          echo "BUILT_BINARY_LINUX_AMD64=$OUTPUT_FILE" >> $GITHUB_ENV # Store for packaging
+          echo "BUILT_BINARY_LINUX_AMD64=$OUTPUT_FILE" >> $GITHUB_ENV 
+          tar -czvf "$ARCHIVE_AMD64" "$OUTPUT_FILE"
 
       - name: Build Linux (ARM64)
         env:
@@ -103,28 +105,13 @@ jobs:
           cd cs-server
           APP_NAME="SirServer"
           OUTPUT_FILE="ARM_${APP_NAME}"
+          ARCHIVE_ARM64="${APP_NAME}-linux-arm64.tar.gz"
           echo "Building for $GOOS/$GOARCH as $OUTPUT_FILE"
           # Embed the version into the Go binary
           go build -ldflags="-s -w -X main.AppVersion=${{ steps.get_tag_version.outputs.TAG_VERSION }} -X main.GitHash=${GITHUB_SHA} -X main.BuildTime=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" -o "$OUTPUT_FILE" ./main.go
           
           echo "BUILT_BINARY_LINUX_ARM64=$OUTPUT_FILE" >> $GITHUB_ENV # Store for packaging
-
-      - name: Package Linux binaries
-        id: archive
-        run: |
-          cd cs-server
-          APP_NAME="SirServer"
-          ARCHIVE_AMD64="${APP_NAME}-linux-amd64.tar.gz"
-          ARCHIVE_ARM64="${APP_NAME}-linux-arm64.tar.gz"
-
-          # Create tar.gz archives. The variables BUILT_BINARY_LINUX_AMD64/ARM64
-          # now correctly point to just "SirServer".
-          tar -czvf "$ARCHIVE_AMD64" "${{ env.BUILT_BINARY_LINUX_AMD64 }}"
-          tar -czvf "$ARCHIVE_ARM64" "${{ env.BUILT_BINARY_LINUX_ARM64 }}"
-
-          # Output paths individually for the create-release job (these are now just filenames)
-          echo "amd64_archive_path=$ARCHIVE_AMD64" >> $GITHUB_OUTPUT
-          echo "arm64_archive_path=$ARCHIVE_ARM64" >> $GITHUB_OUTPUT
+          tar -czvf "$ARCHIVE_ARM64" "$OUTPUT_FILE"
 
       - name: Upload Linux Artifacts
         uses: actions/upload-artifact@v4
