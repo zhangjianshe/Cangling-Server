@@ -23,7 +23,7 @@ import (
 //go:embed static/*
 var staticFiles embed.FS
 
-var AppVersion = "0.0.59"             // Current application version
+var AppVersion = "0.0.60"             // Current application version
 var BuildTime = "2006-01-02 15:04:05" // Build timestamp in milliseconds (UTC) injected by build script
 var GitHash = "unknown"               // Git hash injected by build script
 
