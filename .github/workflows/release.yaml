@@ -56,8 +56,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Change current directory
-        run: cd cs-server
       - name: fetch gwt artifact
         uses: actions/download-artifact@v4
         with:
@@ -91,9 +89,8 @@ jobs:
         run: |
           cd cs-server
           APP_NAME="SirServer"
-          OUTPUT_FILE="${APP_NAME}" # <--- CHANGED: Binary will now be named 'SirServer'
+          OUTPUT_FILE="AMD_${APP_NAME}" 
           echo "Building for $GOOS/$GOARCH as $OUTPUT_FILE"
-          # Embed version ,GitHash and BuildTime into the Go binary
           go build -ldflags="-s -w -X main.AppVersion=${{ steps.get_tag_version.outputs.TAG_VERSION }} -X main.GitHash=${GITHUB_SHA} -X main.BuildTime=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" -o "$OUTPUT_FILE" ./main.go
           
           echo "BUILT_BINARY_LINUX_AMD64=$OUTPUT_FILE" >> $GITHUB_ENV # Store for packaging
@@ -105,7 +102,7 @@ jobs:
         run: |
           cd cs-server
           APP_NAME="SirServer"
-          OUTPUT_FILE="${APP_NAME}" # <--- CHANGED: Binary will now be named 'SirServer'
+          OUTPUT_FILE="ARM_${APP_NAME}"
           echo "Building for $GOOS/$GOARCH as $OUTPUT_FILE"
           # Embed the version into the Go binary
           go build -ldflags="-s -w -X main.AppVersion=${{ steps.get_tag_version.outputs.TAG_VERSION }} -X main.GitHash=${GITHUB_SHA} -X main.BuildTime=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" -o "$OUTPUT_FILE" ./main.go
@@ -115,6 +112,7 @@ jobs:
       - name: Package Linux binaries
         id: archive
         run: |
+          cd cs-server
           APP_NAME="SirServer"
           ARCHIVE_AMD64="${APP_NAME}-linux-amd64.tar.gz"
           ARCHIVE_ARM64="${APP_NAME}-linux-arm64.tar.gz"
@@ -133,8 +131,8 @@ jobs:
         with:
           name: linux-binaries
           path: |
-            SirServer-linux-amd64.tar.gz
-            SirServer-linux-arm64.tar.gz
+            cs-server/SirServer-linux-amd64.tar.gz
+            cs-server/SirServer-linux-arm64.tar.gz
           retention-days: 1 # Artifacts are temporary for inter-job transfer
 
   # Job for Windows builds and Authenticode signing
@@ -188,13 +186,14 @@ jobs:
           Write-Host "Building for $env:GOOS/$env:GOARCH as $env:OUTPUT_FILE"
           go build -ldflags="-s -w  -X main.GitHash=${GITHUB_SHA} -X main.BuildTime=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" -o "$OUTPUT_FILE" ./main.go
       
-          go build -ldflags "-s -w " -o "$env:OUTPUT_FILE" ./main.go
+          
           echo "BUILT_BINARY_WINDOWS_AMD64=$env:OUTPUT_FILE" | Out-File -FilePath $env:GITHUB_ENV -Append
         shell: powershell
 
       - name: Decode and Install Certificate (Windows)
         id: import_cert
         run: |
+          cd cs-server
           $base64Cert = "${{ secrets.APP_SIGNING_CERTIFICATE_BASE64 }}"
           $certPassword = "${{ secrets.CERTIFICATE_PASSWORD }}"
 
@@ -236,6 +235,7 @@ jobs:
 
       - name: Sign Windows Executable
         run: |
+          cd cs-server
           $signtoolPath = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\" -Filter "signtool.exe" -Recurse | Select-Object -ExpandProperty FullName -First 1
           if (-not $signtoolPath) {
               Write-Error "Signtool.exe not found. Ensure Windows SDK Signing Tools are installed."
@@ -273,6 +273,7 @@ jobs:
       - name: Package Windows binary
         id: archive
         run: |
+          cd cs-server
           $env:APP_NAME="SirServer"
           $env:ARCHIVE_NAME="${env:APP_NAME}-windows-amd64.zip"
           $binaryToArchive = "${{ env.BUILT_BINARY_WINDOWS_AMD64 }}"
@@ -287,7 +288,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-binary
-          path: SirServer-windows-amd64.zip
+          path: cs-server/SirServer-windows-amd64.zip
           retention-days: 1
 
   # Job to create the GitHub Release and upload all artifacts
