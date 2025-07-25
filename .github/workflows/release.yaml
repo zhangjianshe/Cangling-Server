@@ -33,7 +33,7 @@ jobs:
       - name: Build GWT project with Maven
         run: cd cs-front && mvn clean compile gwt:compile package install
       - name: Upload GWT artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: gwt-output
           path: target/classes/static/cs
@@ -54,7 +54,7 @@ jobs:
       - name: Change current directory
         run: cd cis-server
       - name: fetch gwt artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: gwt-output
           path: static
@@ -145,7 +145,7 @@ jobs:
       - name: Change current directory
         run: cd cis-server
       - name: fetch gwt artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: gwt-output
           path: static
