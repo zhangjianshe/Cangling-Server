@@ -2,20 +2,25 @@
              xmlns:g='urn:import:com.google.gwt.user.client.ui' xmlns:repo="urn:import:cn.cangling.cs.client.repo"
              xmlns:map="urn:import:cn.cangling.cs.client.component.map">
     <ui:style>
-        .p1 {
+        .p1{
             padding: 10px;
-        }</ui:style>
-    <g:DockLayoutPanel>
+        }
+        </ui:style>
+    <g:DockLayoutPanel ui:field="root">
         <g:west size="300">
             <g:ScrollPanel addStyleNames="panel {style.p1}">
                 <repo:RepositoryList width="100%" ui:field="repoList"/>
             </g:ScrollPanel>
         </g:west>
-        <g:north size="70">
-            <repo:RepositoryInfoPanel ui:field="repoInfo"/>
-        </g:north>
         <g:center>
-            <map:CustomMap ui:field="map"/>
+            <g:LayoutPanel ui:field="content">
+                <g:layer>
+                    <map:CustomMap ui:field="map"/>
+                </g:layer>
+                <g:layer left="150" right="150" top="30" height="72">
+                    <repo:RepositoryInfoPanel visible="false"  ui:field="repoInfo"/>
+                </g:layer>
+            </g:LayoutPanel>
         </g:center>
     </g:DockLayoutPanel>
 </ui:UiBinder>

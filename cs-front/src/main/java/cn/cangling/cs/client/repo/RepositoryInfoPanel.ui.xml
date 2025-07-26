@@ -1,15 +1,26 @@
 <ui:UiBinder xmlns:ui='urn:ui:com.google.gwt.uibinder'
              xmlns:g='urn:import:com.google.gwt.user.client.ui'>
     <ui:style>
-        .s   {
+        .s {
             user-select: text;
+        }
+
+        .box {
+            border-radius: 15px;
+            border: solid 1px rgba(255,255,255,0.3);
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            flex-flow: column;
+            padding: 10px;
+            opacity: 0.9;
         }</ui:style>
-    <g:VerticalPanel styleName="panel" width="100%" height="100%" spacing="4">
+    <g:HTMLPanel styleName="panel {style.box}">
         <g:Label ui:field="lbName" addStyleNames="head">选择图层</g:Label>
         <g:HorizontalPanel verticalAlignment="middle">
             <g:Label addStyleNames="head">XYZ链接地址</g:Label>
             <g:Label width="8px"/>
             <g:Label addStyleNames="text2 {style.s}" ui:field="lbLink"/>
         </g:HorizontalPanel>
-    </g:VerticalPanel>
+    </g:HTMLPanel>
 </ui:UiBinder>
