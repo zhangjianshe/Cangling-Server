@@ -3,6 +3,7 @@ package main
 import (
 	"SirServer/api" // Import the api package
 	"SirServer/canvas"
+	"SirServer/config"
 	"SirServer/updater" // Import the updater package
 	"embed"
 	"fmt"
@@ -14,7 +15,6 @@ import (
 	"os"                     // For exiting
 	"os/exec"
 	"path"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -39,14 +39,12 @@ var sirServer = api.SirServer{ // Use api.SirServer from the api package
 	CompileTime: BuildTime,
 	GitHash:     GitHash,
 }
+var AppConfig config.Config
 
-// canvasContext and REPOSITORY_ROOT are still in main as they are core to this main application's setup
 var canvasContext = canvas.NewCanvasContext(staticFiles)
 
-// Global variables for flags (will be populated by Cobra)
 var (
-	repositoryRoot string
-	port           int
+	openBrowser bool //是否打开浏览器
 )
 
 // Update URLs (passed to updater package)
@@ -95,49 +93,30 @@ var versionCmd = &cobra.Command{
 	},
 }
 
+// this method is called by go runtime
 func init() {
-	DefaultRepositoryRoot, _ = getCurrentDirectory()
-	DefaultRepositoryRoot = path.Join(DefaultRepositoryRoot, "datat")
-	// Local flags for the 'serve' command
-	serveCmd.Flags().StringVarP(&repositoryRoot, "repo-root", "r", DefaultRepositoryRoot, "Root directory for image repositories")
-	serveCmd.Flags().IntVarP(&port, "port", "p", 8080, "Port to listen on")
+	DefaultRepositoryRoot, _ = config.GetCurrentDirectory()
+	DefaultRepositoryRoot = path.Join(DefaultRepositoryRoot, "data")
 
-	// Add subcommands to the root command
+	err := AppConfig.Read("")
+	if err != nil {
+		log.Fatalf("Error: %v\n", err)
+	}
+
+	serveCmd.Flags().StringVarP(&AppConfig.Repository.Root, "repo-root", "r", DefaultRepositoryRoot, "Root directory for image repositories")
+	serveCmd.Flags().IntVarP(&AppConfig.Server.Port, "port", "p", 8080, "Port to listen on")
+	serveCmd.Flags().BoolVarP(&openBrowser, "open", "o", false, "Open Browser automatically")
+
 	rootCmd.AddCommand(serveCmd)
 	rootCmd.AddCommand(updateCmd)
-	rootCmd.AddCommand(versionCmd) // Add the new version command
+	rootCmd.AddCommand(versionCmd)
 }
 
-func getCurrentDirectory() (string, error) {
-	// Method 1: Current Working Directory
-	cwdDir, cwdErr := os.Getwd()
-
-	// Method 2: Executable Directory
-	exePath, exeErr := os.Executable()
-	exeDir := filepath.Dir(exePath)
-
-	// Method 3: Caller's File Directory
-	_, filename, _, callerOk := runtime.Caller(0)
-	callerDir := filepath.Dir(filename)
-
-	// Choose the most appropriate method
-	if cwdErr == nil && cwdDir != "" {
-		return cwdDir, nil
-	}
-
-	if exeErr == nil && exeDir != "" {
-		return exeDir, nil
-	}
-
-	if callerOk {
-		return callerDir, nil
-	}
-
-	return "", fmt.Errorf("could not determine current directory")
-}
 func main() {
-	printBanner() // Print the server banner
-	DefaultRepositoryRoot, _ = getCurrentDirectory()
+	printBanner()
+
+	DefaultRepositoryRoot, _ = config.GetCurrentDirectory()
+
 	// Execute the root command. Cobra will handle parsing args and calling the right command.
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -147,9 +126,9 @@ func main() {
 
 // runServer contains the logic to start the HTTP server
 func runServer(cmd *cobra.Command, args []string) {
-	listenAddr := fmt.Sprintf("0.0.0.0:%d", port)
+	listenAddr := fmt.Sprintf("0.0.0.0:%d", AppConfig.Server.Port)
 
-	if repositoryRoot == DefaultRepositoryRoot {
+	if AppConfig.Repository.Root == DefaultRepositoryRoot {
 		color.Red("Warning: Using default repository root: %s", DefaultRepositoryRoot)
 		color.Red("You can change this by using the --repo-root or -r flag: ")
 		color.Green("./SirServer serve --repo-root /path/to/repositories -p 8080")
@@ -158,7 +137,6 @@ func runServer(cmd *cobra.Command, args []string) {
 
 	r := mux.NewRouter()
 
-	// --- Static File Serving for /static/ prefix ---
 	fs := http.FileServer(http.FS(staticFiles))
 	r.PathPrefix("/static/").Handler(http.StripPrefix("", fs))
 
@@ -170,7 +148,7 @@ func runServer(cmd *cobra.Command, args []string) {
 		_, _ = w.Write(data)
 	})
 
-	apiCtx := api.NewApiContext(repositoryRoot, sirServer, canvasContext, staticFiles)
+	apiCtx := api.NewApiContext(&AppConfig, sirServer, canvasContext, &staticFiles)
 
 	apiCtx.RegisterRoutes(r)
 
@@ -187,16 +165,16 @@ func runServer(cmd *cobra.Command, args []string) {
 	// Give the server a moment to start up before trying to open the browser
 	time.Sleep(500 * time.Millisecond) // Added time.Sleep for server startup
 
-	log.Printf("Repository Root:%s\n", repositoryRoot) // Attempt to open the browser
-	browserURL := fmt.Sprintf("http://localhost:%d", port)
-
-	if err := OpenBrowser(browserURL); err != nil {
-		log.Printf("Warning: Could not automatically open browser: %v", err)
-		fmt.Println("Please open your web browser manually and navigate to:", browserURL)
-	} else {
-		log.Println("Browser launched successfully (or command sent).")
+	log.Printf("Repository Root:%s\n", AppConfig.Repository.Root) // Attempt to open the browser
+	if openBrowser {
+		browserURL := fmt.Sprintf("http://localhost:%d", AppConfig.Server.Port)
+		if err := OpenBrowser(browserURL); err != nil {
+			log.Printf("Warning: Could not automatically open browser: %v", err)
+			fmt.Println("Please open your web browser manually and navigate to:", browserURL)
+		} else {
+			log.Println("Browser launched successfully (or command sent).")
+		}
 	}
-
 	// Wait for the server to exit (e.g., due to an error or signal)
 	if err := <-serverErrors; err != nil {
 		log.Fatalf("Server failed: %v", err)
@@ -212,7 +190,7 @@ func runUpdate(cmd *cobra.Command, args []string) {
 func printBanner() {
 	banner := make([]string, 8)
 	banner[0] = "╔════════════════════════════════════════════════════════════════════╗"
-	banner[1] = "║                                SirServer                           ║"
+	banner[1] = "║                       <<< SirServer>>>                             ║"
 	banner[2] = "╠════════════════════════════════════════════════════════════════════╣"
 	banner[3] = "║                                                                    ║"
 	banner[4] = "║ Author    :  Zhang JianShe                                         ║"

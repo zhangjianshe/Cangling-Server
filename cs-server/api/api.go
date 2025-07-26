@@ -2,7 +2,8 @@ package api
 
 import (
 	"SirServer/canvas" // Assuming canvas is a sibling package
-	"SirServer/sfile"  // Assuming sfile is a sibling package
+	"SirServer/config"
+	"SirServer/sfile" // Assuming sfile is a sibling package
 	"bytes"
 	"embed"
 	"encoding/json"
@@ -105,27 +106,27 @@ func WriteHtml(writer http.ResponseWriter, content []byte) {
 
 // ApiContext holds dependencies for API handlers
 type ApiContext struct {
-	RepositoryRoot string
-	SirServerInfo  SirServer
-	CanvasContext  *canvas.CanvasContext // Note: canvas.CanvasContext is not an interface, so we pass the concrete type
-	StaticFiles    embed.FS
-	EmptyTile      []byte   // empty tile data
-	Repositories   sync.Map // hold a [repositoryPath]->SRepository cache the repository information
+	AppConfig     *config.Config
+	SirServerInfo SirServer
+	CanvasContext *canvas.CanvasContext // Note: canvas.CanvasContext is not an interface, so we pass the concrete type
+	StaticFiles   *embed.FS
+	EmptyTile     []byte   // empty tile data
+	Repositories  sync.Map // hold a [repositoryPath]->SRepository cache the repository information
 }
 
 // NewApiContext creates and returns a new ApiContext
-func NewApiContext(repoRoot string, serverInfo SirServer, canvasCtx *canvas.CanvasContext, staticFs embed.FS) *ApiContext {
+func NewApiContext(config *config.Config, serverInfo SirServer, canvasCtx *canvas.CanvasContext, staticFs *embed.FS) *ApiContext {
 	emptyTileContent, err := staticFs.ReadFile("static/images/emptyTile.png")
 	if err != nil {
 		log.Fatalf("Error reading emptyTile file: %v", err)
 	}
 	return &ApiContext{
-		RepositoryRoot: repoRoot,
-		SirServerInfo:  serverInfo,
-		CanvasContext:  canvasCtx,
-		StaticFiles:    staticFs,
-		EmptyTile:      emptyTileContent,
-		Repositories:   sync.Map{},
+		AppConfig:     config,
+		SirServerInfo: serverInfo,
+		CanvasContext: canvasCtx,
+		StaticFiles:   staticFs,
+		EmptyTile:     emptyTileContent,
+		Repositories:  sync.Map{},
 	}
 }
 
@@ -179,7 +180,7 @@ func (ac *ApiContext) RegisterRoutes(r *mux.Router) {
 
 // listRepositoriesHandler provides a list of available repositories
 func (ac *ApiContext) listRepositoriesHandler(writer http.ResponseWriter, request *http.Request) {
-	repositories, err := sfile.ListRepositories(ac.RepositoryRoot)
+	repositories, err := sfile.ListRepositories(ac.AppConfig.Repository.Root)
 	if err != nil {
 		WriteError(writer, http.StatusInternalServerError, err.Error())
 		return
@@ -195,7 +196,7 @@ func (ac *ApiContext) xyzFileHandler(writer http.ResponseWriter, request *http.R
 	x := vars["x"]
 	y := vars["y"]
 	z := vars["z"]
-	dir := filepath.Join(ac.RepositoryRoot, dirName)
+	dir := filepath.Join(ac.AppConfig.Repository.Root, dirName)
 	NewSFile, err := ac.FindRepository(dir, false)
 	if err != nil {
 		// Use ac.CanvasContext
