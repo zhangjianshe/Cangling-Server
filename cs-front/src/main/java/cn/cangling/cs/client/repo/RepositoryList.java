@@ -1,5 +1,6 @@
 package cn.cangling.cs.client.repo;
 
+import cn.cangling.cs.client.component.MessagePanel;
 import cn.cangling.cs.client.events.CsEvent;
 import cn.cangling.cs.client.events.CsEventHandler;
 import cn.cangling.cs.client.events.HasCsEventHandler;
@@ -55,7 +56,8 @@ public class RepositoryList extends Composite implements HasCsEventHandler {
 
             @Override
             public void onFailure(String reason) {
-                Window.alert(reason);
+                root.clear();
+                root.add(MessagePanel.create(reason).height("150px"));
             }
         });
 

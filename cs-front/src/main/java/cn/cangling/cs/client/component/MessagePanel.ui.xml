@@ -1,0 +1,12 @@
+<ui:UiBinder xmlns:ui='urn:ui:com.google.gwt.uibinder'
+             xmlns:g='urn:import:com.google.gwt.user.client.ui'>
+    <ui:style>
+        .item {
+            padding: 10px;
+            line-break: anywhere;
+        }
+    </ui:style>
+    <g:HTMLPanel addStyleNames="item">
+        <g:Label ui:field="lbMessage" styleName="text2 {style.item}"/>
+    </g:HTMLPanel>
+</ui:UiBinder>

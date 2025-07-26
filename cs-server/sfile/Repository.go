@@ -58,9 +58,9 @@ type Repository struct {
 // ListRepositories returns a list of available repositories
 func ListRepositories(baseDir string) ([]Repository, error) {
 	repositories := make([]Repository, 0)
-	dirs, error := os.ReadDir(baseDir)
-	if error != nil {
-		return make([]Repository, 0), error
+	dirs, err := os.ReadDir(baseDir)
+	if err != nil {
+		return make([]Repository, 0), fmt.Errorf("仓库根目录不存在(%s)", baseDir)
 	}
 
 	for _, dir := range dirs {

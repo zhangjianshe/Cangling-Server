@@ -13,6 +13,7 @@ import (
 	"net/http"               // Standard HTTP package
 	"os"                     // For exiting
 	"os/exec"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -95,6 +96,8 @@ var versionCmd = &cobra.Command{
 }
 
 func init() {
+	DefaultRepositoryRoot, _ = getCurrentDirectory()
+	DefaultRepositoryRoot = path.Join(DefaultRepositoryRoot, "datat")
 	// Local flags for the 'serve' command
 	serveCmd.Flags().StringVarP(&repositoryRoot, "repo-root", "r", DefaultRepositoryRoot, "Root directory for image repositories")
 	serveCmd.Flags().IntVarP(&port, "port", "p", 8080, "Port to listen on")
@@ -167,15 +170,11 @@ func runServer(cmd *cobra.Command, args []string) {
 		_, _ = w.Write(data)
 	})
 
-	// Initialize the API context with necessary dependencies
-	// Note: We use the global 'repositoryRoot' variable populated by Cobra
 	apiCtx := api.NewApiContext(repositoryRoot, sirServer, canvasContext, staticFiles)
 
-	// Register all API routes using the apiCtx
 	apiCtx.RegisterRoutes(r)
 
 	// Start the HTTP server
-	color.Blue("\nClick link to open browser: http://localhost:%d\n", port)
 	color.Cyan("\n")
 
 	// Start the HTTP server in a goroutine so it doesn't block
@@ -188,7 +187,7 @@ func runServer(cmd *cobra.Command, args []string) {
 	// Give the server a moment to start up before trying to open the browser
 	time.Sleep(500 * time.Millisecond) // Added time.Sleep for server startup
 
-	// Attempt to open the browser
+	log.Printf("Repository Root:%s\n", repositoryRoot) // Attempt to open the browser
 	browserURL := fmt.Sprintf("http://localhost:%d", port)
 
 	if err := OpenBrowser(browserURL); err != nil {

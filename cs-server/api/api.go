@@ -70,7 +70,7 @@ func WriteOk(writer http.ResponseWriter, data interface{}) {
 // WriteError marshals an error into a JSON response and writes it to the http.ResponseWriter (moved here)
 func WriteError(writer http.ResponseWriter, code int, message string) {
 	writer.Header().Set("Content-Type", "application/json")
-	writer.WriteHeader(code)
+	writer.WriteHeader(http.StatusOK)
 	result, err := json.Marshal(Error(code, message))
 	if err != nil {
 		log.Printf("Error marshalling error response: %v", err)
@@ -181,7 +181,7 @@ func (ac *ApiContext) RegisterRoutes(r *mux.Router) {
 func (ac *ApiContext) listRepositoriesHandler(writer http.ResponseWriter, request *http.Request) {
 	repositories, err := sfile.ListRepositories(ac.RepositoryRoot)
 	if err != nil {
-		WriteError(writer, http.StatusInternalServerError, "Failed to list repositories")
+		WriteError(writer, http.StatusInternalServerError, err.Error())
 		return
 	}
 	WriteOk(writer, repositories)
