@@ -23,6 +23,11 @@ img {
     user-select: none;
     -webkit-user-drag: none;
 }
+@external .head;
+.head{
+    font-weight: bold;
+    color: ITEM_TEXT;
+}
 
 @external .item;
 .item{
@@ -37,7 +42,7 @@ img {
 .item:hover{
     background-color: ITEM_BK_HOVER;
 }
-.item:active{
+.item[selected="true"]{
     background-color: ITEM_BK_ACTIVE;
 }
 @external .text;

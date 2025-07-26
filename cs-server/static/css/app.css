@@ -20,7 +20,7 @@
     --color-13:#FFFFFF;
     --item-bk-color: var(--color-2);
     --item-bk-color-hover: var(--color-3);
-    --item-bk-color-active: var(--color-2);
+    --item-bk-color-active: var(--color-1);
     --item-text-color: var(--color-11);
     --item-text-color-hover: var(--color-11);
     --item-text-color-active: var(--color-13);

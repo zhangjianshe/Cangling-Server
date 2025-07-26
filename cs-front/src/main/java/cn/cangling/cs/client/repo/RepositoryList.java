@@ -22,6 +22,7 @@ public class RepositoryList extends Composite implements HasCsEventHandler {
     private static final RepositoryListUiBinder ourUiBinder = GWT.create(RepositoryListUiBinder.class);
     @UiField
     VerticalPanel root;
+    RepositoryItem selected = null;
 
     public RepositoryList() {
         initWidget(ourUiBinder.createAndBindUi(this));
@@ -42,6 +43,11 @@ public class RepositoryList extends Composite implements HasCsEventHandler {
                     item.setRepo(repo);
                     root.add(item);
                     item.addDomHandler(e -> {
+                        if (selected != null) {
+                            selected.setSelected(false);
+                        }
+                        selected = item;
+                        selected.setSelected(true);
                         fireEvent(CsEvent.create(ET_SELECT, repo));
                     }, ClickEvent.getType());
                 }

@@ -8,4 +8,8 @@ public interface CsCss extends CssResource {
     String text2();
 
     String text();
+
+    String head();
+
+    String panel();
 }

@@ -28,6 +28,10 @@ public class RepositoryItem extends Composite {
         lbSize.setText(Strings.formatFileSize(repo.size));
     }
 
+    public void setSelected(boolean selected) {
+        getElement().setAttribute("selected", selected ? "true" : "");
+    }
+
     interface RepositoryItemUiBinder extends UiBinder<HTMLPanel, RepositoryItem> {
     }
 }

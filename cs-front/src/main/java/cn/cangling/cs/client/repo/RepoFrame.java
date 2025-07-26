@@ -16,6 +16,8 @@ public class RepoFrame extends Composite {
     RepositoryList repoList;
     @UiField
     CustomMap map;
+    @UiField
+    RepositoryInfoPanel repoInfo;
     private final String GROUP_BASE_MAP = "baseMap";
     public RepoFrame() {
         initWidget(ourUiBinder.createAndBindUi(this));
@@ -33,6 +35,7 @@ public class RepoFrame extends Composite {
         {
             case ET_SELECT:{
                 Repo repo = event.getData();
+                repoInfo.setRepository(repo);
                 map.clearGroupLayer("select");
                 String url = "api/v1/xyz/"+repo.name+"/{z}/{x}/{y}.png";
                 map.addXyzLayer(url,"select");
