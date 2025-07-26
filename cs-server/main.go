@@ -159,14 +159,12 @@ func runServer(cmd *cobra.Command, args []string) {
 	fs := http.FileServer(http.FS(staticFiles))
 	r.PathPrefix("/static/").Handler(http.StripPrefix("", fs))
 
-	// Debugging route
-	r.HandleFunc("/debug", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/plain")
-		entries, _ := staticFiles.ReadDir("static")
-		fmt.Fprintln(w, "Embedded Files:")
-		for _, entry := range entries {
-			fmt.Fprintf(w, "- %s\n", entry.Name())
-		}
+	// provider a favicon
+	r.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/vnd.microsoft.icon")
+		data, _ := staticFiles.ReadFile("static/favicon.ico")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(data)
 	})
 
 	// Initialize the API context with necessary dependencies
