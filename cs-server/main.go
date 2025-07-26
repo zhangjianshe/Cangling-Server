@@ -95,6 +95,7 @@ var versionCmd = &cobra.Command{
 
 // this method is called by go runtime
 func init() {
+	//default repository root location is ./data
 	DefaultRepositoryRoot, _ = config.GetCurrentDirectory()
 	DefaultRepositoryRoot = path.Join(DefaultRepositoryRoot, "data")
 
@@ -102,9 +103,16 @@ func init() {
 	if err != nil {
 		log.Fatalf("Error: %v\n", err)
 	}
-
-	serveCmd.Flags().StringVarP(&AppConfig.Repository.Root, "repo-root", "r", DefaultRepositoryRoot, "Root directory for image repositories")
-	serveCmd.Flags().IntVarP(&AppConfig.Server.Port, "port", "p", 8080, "Port to listen on")
+	var rootPath = ""
+	var port = 8080
+	serveCmd.Flags().StringVarP(&rootPath, "repo-root", "r", "", "Root directory for image repositories")
+	if rootPath != "" {
+		AppConfig.Repository.Root = rootPath
+	}
+	serveCmd.Flags().IntVarP(&port, "port", "p", 0, "Port to listen on")
+	if port != 0 {
+		AppConfig.Server.Port = port
+	}
 	serveCmd.Flags().BoolVarP(&openBrowser, "open", "o", false, "Open Browser automatically")
 
 	rootCmd.AddCommand(serveCmd)
