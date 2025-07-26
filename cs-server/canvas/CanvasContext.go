@@ -88,7 +88,7 @@ func (c *CanvasContext) CreateImage(width int, height int, backgroundColor color
 		x := (fixed.I(width) - textWidth) / 2
 		y = y + fixed.I(lineHeight+4)
 		dr.Dot = fixed.Point26_6{X: x, Y: y}
-		dr.DrawString(line)
+		dr.DrawBytes([]byte(line))
 	}
 
 	// Encode the image to PNG format and write it to the buffer

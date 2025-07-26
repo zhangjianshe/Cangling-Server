@@ -107,7 +107,7 @@ public class CustomMap extends Composite implements RequiresResize {
         XyzOptions xyzOptions = OLFactory.createOptions();
         xyzOptions.setUrl(url);
         Xyz xyz = OLFactory.createXyz(xyzOptions);
-        xyz.set("groupName", group);
+        layer.set("groupName", group);
         layer.setSource(xyz);
         map.addLayer(layer);
         return layer;
