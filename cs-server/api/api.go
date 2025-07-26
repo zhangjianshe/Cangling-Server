@@ -21,12 +21,13 @@ import (
 
 // SirServer struct defines the server's metadata (moved here from main.go)
 type SirServer struct {
-	Name        string `json:"name"`
-	Version     string `json:"version"`
-	Author      string `json:"author"`
-	Email       string `json:"email"`
-	CompileTime string `json:"compileTime"`
-	GitHash     string `json:"gitHash"`
+	Name          string `json:"name"`
+	Version       string `json:"version"`
+	Author        string `json:"author"`
+	Email         string `json:"email"`
+	CompileTime   string `json:"compileTime"`
+	GitHash       string `json:"gitHash"`
+	LatestVersion string `json:"latestVersion"`
 }
 
 // ApiResult struct defines a standard API response format (moved here from main.go)

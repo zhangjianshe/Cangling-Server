@@ -62,7 +62,7 @@ func (u *Updater) PerformUpdate() error {
 	color.Yellow("Checking for updates...")
 
 	// 1. Get latest update information
-	updateInfo, err := u.getUpdateInfo()
+	updateInfo, err := u.GetUpdateInfo()
 	if err != nil {
 		return fmt.Errorf("failed to get update info: %w", err)
 	}
@@ -150,8 +150,8 @@ func (u *Updater) PerformUpdate() error {
 	return nil // Unreachable
 }
 
-// getUpdateInfo fetches and parses the update_info.json
-func (u *Updater) getUpdateInfo() (*UpdateInfo, error) {
+// GetUpdateInfo fetches and parses the update_info.json
+func (u *Updater) GetUpdateInfo() (*UpdateInfo, error) {
 	resp, err := http.Get(u.VersionInfoURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch version info from %s: %w", u.VersionInfoURL, err)

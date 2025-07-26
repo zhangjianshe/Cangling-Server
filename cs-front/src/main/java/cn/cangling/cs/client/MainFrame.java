@@ -56,7 +56,12 @@ public class MainFrame extends Composite implements RequiresResize {
                     @Override
                     public void onSuccess(ApiResult<ServerVersion> result) {
                         if (result.isSuccess()) {
-                            lbVersion.setText(result.data.version + "@" + result.data.author);
+                            if (result.data.hasNewVersion()) {
+                                lbVersion.setText("Ver: "+result.data.version + "->" + result.data.latestVersion);
+                            } else {
+                                lbVersion.setText("Ver: "+result.data.version);
+                            }
+                            logo.setTitle(result.data.author);
                         }
                     }
                 });

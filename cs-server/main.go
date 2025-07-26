@@ -175,6 +175,9 @@ func runServer(cmd *cobra.Command, args []string) {
 			log.Println("Browser launched successfully (or command sent).")
 		}
 	}
+	//新的线程 获取服务器的最新版本
+	go checkLatestVersion(&sirServer)
+
 	// Wait for the server to exit (e.g., due to an error or signal)
 	if err := <-serverErrors; err != nil {
 		log.Fatalf("Server failed: %v", err)
@@ -187,15 +190,32 @@ func runUpdate(cmd *cobra.Command, args []string) {
 	appUpdater.PerformUpdate()
 }
 
+func checkLatestVersion(server *api.SirServer) {
+	appUpdater := updater.NewUpdater(sirServer.Version, versionInfoURL, downloadBaseURL)
+	info, err := appUpdater.GetUpdateInfo()
+	if err != nil {
+		log.Println("Failed to get latest version of SirServer")
+	} else {
+		newVersion := strings.Trim(info.LatestVersion, "v")
+		if server.Version != newVersion {
+			log.Printf("SirServer version changed from %s to %s\n", server.Version, info.LatestVersion)
+		} else {
+			log.Println("SirServer is up to date")
+		}
+		server.LatestVersion = newVersion
+	}
+}
+
 func printBanner() {
 	banner := make([]string, 8)
 	banner[0] = "╔════════════════════════════════════════════════════════════════════╗"
-	banner[1] = "║                       <<< SirServer>>>                             ║"
+	banner[1] = "║                         <<< SirServer>>>                           ║"
 	banner[2] = "╠════════════════════════════════════════════════════════════════════╣"
 	banner[3] = "║                                                                    ║"
 	banner[4] = "║ Author    :  Zhang JianShe                                         ║"
 	banner[5] = "║ Email     :  zhangjianshe@gmail.com                                ║"
 	banner[6] = "║ Version   :  ____________________                                  ║"
+	banner[3] = "║                                                                    ║"
 	banner[7] = "╚════════════════════════════════════════════════════════════════════╝"
 
 	prefix := "║ Version   :  "
