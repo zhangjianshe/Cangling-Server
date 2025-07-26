@@ -13,6 +13,7 @@ import (
 	"image/draw"
 	"image/png" // For encoding PNG
 	"log"       // For logging fatal errors during font loading
+	"strings"
 )
 
 // CanvasContext holds resources needed for drawing operations, like the font.
@@ -43,7 +44,7 @@ func NewCanvasContext(fs embed.FS) *CanvasContext {
 
 	// Create a font face (defines font size, DPI, etc.)
 	faceOptions := &truetype.Options{
-		Size:    10,               // Font size in points
+		Size:    18,               // Font size in points
 		DPI:     72,               // Dots per inch
 		Hinting: font.HintingNone, // No hinting for simplicity
 	}
@@ -79,28 +80,16 @@ func (c *CanvasContext) CreateImage(width int, height int, backgroundColor color
 		Face: c.Font, // Use the font face from the CanvasContext
 	}
 
-	// Measure the text width to center it
-	// This operation can sometimes expose issues if the font data is inconsistent
-	// or if the text contains unsupported characters.
-	textWidth := dr.MeasureString(text)
-
-	// Calculate horizontal position for centering
-	x := (fixed.I(width) - textWidth) / 2
-
-	// Calculate vertical position for centering (approximately)
-	// The `Dot` field represents the baseline of the text.
-	// `c.Font.Metrics().Ascent` gives the distance from the baseline to the top of the font.
-	// Issues here are less likely to cause "index out of range" directly, but
-	// incorrect positioning could lead to drawing off-screen.
-	y := (fixed.I(height) + c.Font.Metrics().Ascent) / 2
-
-	dr.Dot = fixed.Point26_6{X: x, Y: y} // Set the drawing origin
-
-	// This is the most likely place where "index out of range" errors occur,
-	// especially if the 'text' string contains characters that the loaded font
-	// (either custom or goregular) does not have glyph data for, or if the font
-	// itself has malformed glyph tables.
-	dr.DrawString(text) // Draw the text
+	lines := strings.Split(text, ":")
+	lineHeight := 24
+	y := fixed.I((height - (len(lines) * lineHeight)) / 2)
+	for _, line := range lines {
+		textWidth := dr.MeasureString(line)
+		x := (fixed.I(width) - textWidth) / 2
+		y = y + fixed.I(lineHeight+4)
+		dr.Dot = fixed.Point26_6{X: x, Y: y}
+		dr.DrawString(line)
+	}
 
 	// Encode the image to PNG format and write it to the buffer
 	err := png.Encode(&buf, img)

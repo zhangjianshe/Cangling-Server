@@ -14,6 +14,8 @@ import (
 	"net/url"
 	"path/filepath"
 	"strconv"
+	"sync"
+	"unicode/utf8"
 )
 
 // SirServer struct defines the server's metadata (moved here from main.go)
@@ -86,6 +88,12 @@ func WriteImage(writer http.ResponseWriter, buffer bytes.Buffer) {
 	writer.Header().Set("Content-Length", strconv.Itoa(len(buffer.Bytes())))
 	_, _ = writer.Write(buffer.Bytes())
 }
+func WriteBytes(writer http.ResponseWriter, contentType string, buffer []byte) {
+	writer.Header().Set("Content-Type", contentType)
+	writer.WriteHeader(http.StatusOK)
+	writer.Header().Set("Content-Length", strconv.Itoa(len(buffer)))
+	_, _ = writer.Write(buffer)
+}
 
 // WriteHtml writes HTML content (moved here)
 func WriteHtml(writer http.ResponseWriter, content []byte) {
@@ -101,15 +109,48 @@ type ApiContext struct {
 	SirServerInfo  SirServer
 	CanvasContext  *canvas.CanvasContext // Note: canvas.CanvasContext is not an interface, so we pass the concrete type
 	StaticFiles    embed.FS
+	EmptyTile      []byte   // empty tile data
+	Repositories   sync.Map // hold a [repositoryPath]->SRepository cache the repository information
 }
 
 // NewApiContext creates and returns a new ApiContext
 func NewApiContext(repoRoot string, serverInfo SirServer, canvasCtx *canvas.CanvasContext, staticFs embed.FS) *ApiContext {
+	emptyTileContent, err := staticFs.ReadFile("static/images/emptyTile.png")
+	if err != nil {
+		log.Fatalf("Error reading emptyTile file: %v", err)
+	}
 	return &ApiContext{
 		RepositoryRoot: repoRoot,
 		SirServerInfo:  serverInfo,
 		CanvasContext:  canvasCtx,
 		StaticFiles:    staticFs,
+		EmptyTile:      emptyTileContent,
+		Repositories:   sync.Map{},
+	}
+}
+
+// FindRepository this method will cache the repository infomation
+func (ac *ApiContext) FindRepository(key string, create bool) (*sfile.SRepository, error) {
+	if utf8.RuneCountInString(key) == 0 {
+		return nil, fmt.Errorf("请求的仓库PATH为空")
+	}
+	if value, ok := ac.Repositories.Load(key); ok {
+		repo := value.(*sfile.SRepository)
+		return repo, nil
+	} else {
+		repo := sfile.NewRepository(key, create)
+		ac.Repositories.Store(key, repo)
+		if repo.Ok {
+			return repo, nil
+		} else {
+			buffer, err1 := ac.CanvasContext.CreateImage(256, 256, image.Transparent, image.Black, repo.Message)
+			if err1 != nil {
+				repo.ErrorTile = buffer.Bytes()
+			} else {
+				repo.ErrorTile = ac.EmptyTile
+			}
+			return nil, fmt.Errorf("%s", repo.Message)
+		}
 	}
 }
 
@@ -155,11 +196,10 @@ func (ac *ApiContext) xyzFileHandler(writer http.ResponseWriter, request *http.R
 	y := vars["y"]
 	z := vars["z"]
 	dir := filepath.Join(ac.RepositoryRoot, dirName)
-	NewSFile, err := sfile.NewRepository(dir, false)
+	NewSFile, err := ac.FindRepository(dir, false)
 	if err != nil {
 		// Use ac.CanvasContext
-		buffer, _ := ac.CanvasContext.CreateImage(256, 256, image.Transparent, image.Black, err.Error())
-		WriteImage(writer, buffer)
+		WriteBytes(writer, "image/png", NewSFile.ErrorTile)
 		return
 	}
 	intx, _ := strconv.ParseInt(x, 10, 64)
@@ -168,9 +208,12 @@ func (ac *ApiContext) xyzFileHandler(writer http.ResponseWriter, request *http.R
 
 	xyz, err := NewSFile.GetXYZ(intx, inty, int8(intz))
 	if err != nil {
-		// Use ac.CanvasContext
-		buffer, _ := ac.CanvasContext.CreateImage(256, 256, image.Transparent, image.Black, err.Error())
-		WriteImage(writer, buffer)
+		buffer, err1 := ac.CanvasContext.CreateImage(256, 256, image.Transparent, image.White, err.Error())
+		if err1 != nil {
+			WriteBytes(writer, "image/png", NewSFile.ErrorTile)
+		} else {
+			WriteImage(writer, buffer)
+		}
 		return
 	}
 	WriteImage(writer, *xyz)
