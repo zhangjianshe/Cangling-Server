@@ -4,5 +4,6 @@ COPY SirServer /opt/cangling/sir
 RUN chmod +x /opt/cangling/sir/SirServer
 VOLUME repo
 EXPOSE 8080
-ENTRYPOINT ./SirServer serve -r /repo
+CMD ["serve", "-r", "/repo"]
+ENTRYPOINT ["./SirServer"]
 

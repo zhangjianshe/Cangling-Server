@@ -93,6 +93,12 @@ var versionCmd = &cobra.Command{
 	},
 }
 
+// variable used by command args parser
+var (
+	rootPath = ""
+	port     = 8080
+)
+
 // this method is called by go runtime
 func init() {
 	//default repository root location is ./data
@@ -103,18 +109,11 @@ func init() {
 	if err != nil {
 		log.Fatalf("Error: %v\n", err)
 	}
-	var rootPath = ""
-	var port = 8080
-	serveCmd.Flags().StringVarP(&rootPath, "repo-root", "r", "", "Root directory for image repositories")
-	log.Println("Command line provide root path is :", rootPath)
-	if rootPath != "" {
 
-		AppConfig.Repository.Root = rootPath
-	}
+	serveCmd.Flags().StringVarP(&rootPath, "repo-root", "r", "", "Root directory for image repositories")
+
 	serveCmd.Flags().IntVarP(&port, "port", "p", 0, "Port to listen on")
-	if port != 0 {
-		AppConfig.Server.Port = port
-	}
+
 	serveCmd.Flags().BoolVarP(&openBrowser, "open", "o", false, "Open Browser automatically")
 
 	rootCmd.AddCommand(serveCmd)
@@ -136,6 +135,15 @@ func main() {
 
 // runServer contains the logic to start the HTTP server
 func runServer(cmd *cobra.Command, args []string) {
+
+	log.Println("Command line provide root path is :", rootPath)
+	if rootPath != "" {
+		AppConfig.Repository.Root = rootPath
+	}
+	if port != 0 {
+		AppConfig.Server.Port = port
+	}
+
 	listenAddr := fmt.Sprintf("0.0.0.0:%d", AppConfig.Server.Port)
 
 	if AppConfig.Repository.Root == DefaultRepositoryRoot {
