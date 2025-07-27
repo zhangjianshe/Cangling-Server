@@ -99,8 +99,10 @@ jobs:
           
           #prepare docker build directory
           mkdir ./dist
-          cp "$ARCHIVE_AMD64" ./dist
+          cp $OUTPUT_FILE" ./dist
           cp Dockerfile ./dist
+          ls "$ARCHIVE_AMD64"
+          ls ./dist
       - name: Upload docker artifact
         uses: actions/upload-artifact@v4
         with:
