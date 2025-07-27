@@ -99,7 +99,7 @@ jobs:
           
           #prepare docker build directory
           mkdir ./dist
-          cp $OUTPUT_FILE" ./dist
+          cp $OUTPUT_FILE ./dist
           cp Dockerfile ./dist
           ls ./dist
       - name: Upload docker artifact
