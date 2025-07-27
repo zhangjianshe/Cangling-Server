@@ -106,7 +106,9 @@ func init() {
 	var rootPath = ""
 	var port = 8080
 	serveCmd.Flags().StringVarP(&rootPath, "repo-root", "r", "", "Root directory for image repositories")
+	log.Println("Command line provide root path is :", rootPath)
 	if rootPath != "" {
+
 		AppConfig.Repository.Root = rootPath
 	}
 	serveCmd.Flags().IntVarP(&port, "port", "p", 0, "Port to listen on")
