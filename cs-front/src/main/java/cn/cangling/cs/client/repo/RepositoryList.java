@@ -52,6 +52,10 @@ public class RepositoryList extends Composite implements HasCsEventHandler {
                         fireEvent(CsEvent.create(ET_SELECT, repo));
                     }, ClickEvent.getType());
                 }
+                if (result.data.length==0)
+                {
+                    root.add(MessagePanel.create("仓库中没有影像需要输出").height("150px"));
+                }
             }
 
             @Override
