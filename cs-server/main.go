@@ -101,6 +101,7 @@ var (
 
 // this method is called by go runtime
 func init() {
+	printBanner()
 	//default repository root location is ./data
 	DefaultRepositoryRoot, _ = config.GetCurrentDirectory()
 	DefaultRepositoryRoot = path.Join(DefaultRepositoryRoot, "data")
@@ -122,7 +123,6 @@ func init() {
 }
 
 func main() {
-	printBanner()
 
 	DefaultRepositoryRoot, _ = config.GetCurrentDirectory()
 
@@ -226,9 +226,9 @@ func checkLatestVersion(server *api.SirServer) {
 
 func printBanner() {
 	banner := make([]string, 8)
-	banner[0] = "╔════════════════════════════════════════════════════════════════════╗"
-	banner[1] = "║                         <<< SirServer>>>                           ║"
-	banner[2] = "╠════════════════════════════════════════════════════════════════════╣"
+	banner[0] = "                                                                     "
+	banner[1] = "                          <<< SirServer>>>                           "
+	banner[2] = "╔════════════════════════════════════════════════════════════════════╗"
 	banner[3] = "║                                                                    ║"
 	banner[4] = "║ Author    :  Zhang JianShe                                         ║"
 	banner[5] = "║ Email     :  zhangjianshe@gmail.com                                ║"

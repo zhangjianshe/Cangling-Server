@@ -93,7 +93,7 @@ func GetConfig(fileName string) (Config, error) {
 				if err3 != nil {
 					log.Printf("Error marshalling new config: %v", err3)
 				} else {
-					log.Printf("create a new config file failed: %s", currenDirConfig)
+					log.Printf("create a new config file : %s", currenDirConfig)
 					_ = os.WriteFile(currenDirConfig, data, 0644)
 				}
 				return newConfig, nil
