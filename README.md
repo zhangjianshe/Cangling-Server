@@ -20,7 +20,7 @@ Cangling Server is a map server.
 
 # docker start
 ```shell
-   docker run  -p8080:8080  -v ./reporoor:/repo mapway/sir-server:1.0
+   docker run -it --name sir --rm -p 8080:8080 -v /mnt/cangling/devdata/share:/repo sir-serve:latest  
 ```
 
 # Example
