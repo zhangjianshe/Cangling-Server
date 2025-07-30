@@ -161,7 +161,7 @@ func runServer(cmd *cobra.Command, args []string) {
 	// provider a favicon
 	r.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/vnd.microsoft.icon")
-		data, _ := staticFiles.ReadFile("static/favicon.ico")
+		data, _ := staticFiles.ReadFile(path.Join("static", "favicon.ico"))
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write(data)
 	})
