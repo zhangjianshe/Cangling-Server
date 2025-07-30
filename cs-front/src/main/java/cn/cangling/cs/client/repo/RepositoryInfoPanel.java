@@ -23,7 +23,7 @@ public class RepositoryInfoPanel extends Composite {
 
     public void setRepository(Repo repo) {
         lbName.setText(repo.name);
-        String url = Window.Location.getProtocol() + "://" + Window.Location.getHost();
+        String url = Window.Location.getProtocol() + "//" + Window.Location.getHost();
         url += "/api/v1/xyz/" + repo.name + "/{z}/{x}/{y}.png";
         lbLink.setText(url);
     }

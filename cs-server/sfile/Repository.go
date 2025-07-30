@@ -55,6 +55,24 @@ type Repository struct {
 	Pared bool    `json:"pared"`
 }
 
+// UpdateMetaData
+func UpdateMetaData(baseDir string, dirName string, repoData Repository) error {
+
+	// Construct full path correctly
+	fullPath := filepath.Join(baseDir, dirName, "repository.json")
+
+	// Decode JSON
+	jsonData, err := json.Marshal(repoData)
+	if err != nil {
+		return fmt.Errorf("failed to parse repository.json: %w", err)
+	}
+	err1 := os.WriteFile(fullPath, jsonData, 0644)
+	if err1 != nil {
+		return err1
+	}
+	return nil
+}
+
 // ListRepositories returns a list of available repositories
 func ListRepositories(baseDir string) ([]Repository, error) {
 	repositories := make([]Repository, 0)

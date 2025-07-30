@@ -237,7 +237,7 @@ func printBanner() {
 	banner[7] = "╚════════════════════════════════════════════════════════════════════╝"
 
 	prefix := "║ Version   :  "
-	suffix := " ║"
+	suffix := "  ║"
 	size := utf8.RuneCountInString(banner[0]) - utf8.RuneCountInString(prefix) - utf8.RuneCountInString(suffix) - utf8.RuneCountInString(AppVersion)
 	banner[6] = fmt.Sprintf("%s%s%s%s", prefix, AppVersion, strings.Repeat(" ", size), suffix)
 	fmt.Println(strings.Join(banner, "\n"))

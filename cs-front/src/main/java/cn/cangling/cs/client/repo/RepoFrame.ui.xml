@@ -7,7 +7,7 @@
         }
         </ui:style>
     <g:DockLayoutPanel ui:field="root">
-        <g:west size="300">
+        <g:west size="350">
             <g:ScrollPanel addStyleNames="panel {style.p1}">
                 <repo:RepositoryList width="100%" ui:field="repoList"/>
             </g:ScrollPanel>

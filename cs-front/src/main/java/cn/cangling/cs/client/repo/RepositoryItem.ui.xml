@@ -1,9 +1,17 @@
 <ui:UiBinder xmlns:ui='urn:ui:com.google.gwt.uibinder'
              xmlns:g='urn:import:com.google.gwt.user.client.ui'>
     <ui:style>
-    </ui:style>
+        .col {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex-shrink: 10;
+            flex-grow: 10;
+            text-wrap: nowrap;
+            max-width: 235px;
+            width: 240px;
+        }</ui:style>
     <g:HTMLPanel styleName="item">
-        <g:Label ui:field="lbName" styleName="text">Name</g:Label>
+        <g:Label ui:field="lbName" styleName="text {style.col}">Name</g:Label>
         <g:Label ui:field="lbSize" styleName="text2">size</g:Label>
     </g:HTMLPanel>
 </ui:UiBinder>

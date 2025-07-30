@@ -8,7 +8,7 @@ public class Repo {
     public String name;
     public Double lng;
     public Double lat;
-    public Double zoom;
+    public int zoom;
     public Double size;
     public String url;
     public boolean pared;

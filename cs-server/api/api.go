@@ -160,13 +160,9 @@ func (ac *ApiContext) FindRepository(key string, create bool) (*sfile.SRepositor
 func (ac *ApiContext) RegisterRoutes(r *mux.Router) {
 	// API Routes
 	r.HandleFunc("/api/v1/repositories", ac.listRepositoriesHandler).Methods("GET")
+	r.HandleFunc("/api/v1/xyz/{dir}/update", ac.updateRepoMetaData).Methods("POST")
 	r.HandleFunc("/api/v1/xyz/{dir}/{z:[0-9]+}/{x:[0-9]+}/{y:[0-9]+}.png", ac.xyzFileHandler).Methods("GET")
 	r.HandleFunc("/api/v1/server", ac.serverInfoHandler).Methods("GET")
-
-	// Root path (index.html) - depends on static files, so keep it in this context if it references embedded static files
-	// If index.html is truly static and doesn't depend on server-side logic related to repo or canvas,
-	// it could be served directly by the main application's static file handler.
-	// For now, keeping it here as it was logically grouped with other content serving.
 	staticFileDirectory := "static" // Path inside the embedded FS
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		indexFile, _ := url.JoinPath(staticFileDirectory, "index.html")
@@ -201,6 +197,7 @@ func (ac *ApiContext) xyzFileHandler(writer http.ResponseWriter, request *http.R
 	NewSFile, err := ac.FindRepository(dir, false)
 	if err != nil {
 		// Use ac.CanvasContext
+		fmt.Println("not find repository,", err.Error())
 		WriteBytes(writer, "image/png", NewSFile.ErrorTile)
 		return
 	}
@@ -224,4 +221,23 @@ func (ac *ApiContext) xyzFileHandler(writer http.ResponseWriter, request *http.R
 // serverInfoHandler provides information about the server
 func (ac *ApiContext) serverInfoHandler(writer http.ResponseWriter, request *http.Request) {
 	WriteOk(writer, ac.SirServerInfo)
+}
+
+// updateRepoMetaData provides information about the server
+func (ac *ApiContext) updateRepoMetaData(writer http.ResponseWriter, request *http.Request) {
+	var repoData sfile.Repository
+	vars := mux.Vars(request)
+	fmt.Printf("Received request for XYZ: %v\n", vars)
+	dirName := vars["dir"]
+	err := json.NewDecoder(request.Body).Decode(&repoData)
+
+	if err != nil {
+		WriteError(writer, 500, err.Error())
+		return
+	}
+	err = sfile.UpdateMetaData(ac.AppConfig.Repository.Root, dirName, repoData)
+	if err != nil {
+		log.Printf(err.Error())
+	}
+	WriteOk(writer, repoData)
 }

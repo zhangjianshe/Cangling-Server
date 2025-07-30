@@ -33,11 +33,14 @@ func (f *SRepository) GetXYZ(x int64, y int64, z int8) (*bytes.Buffer, error) {
 		return nil, fmt.Errorf("没有数据")
 	}
 	defer db.Close()
-	tableName := fmt.Sprintf("%c_%d_%d", 'A'+vz, x/64, y/64)
 	index := x%64 + 64*(y%64)
+	tableName := fmt.Sprintf("%c_%d_%d", 'A'+vz, x/64, y/64)
+	//log.Printf("%s/%c_%d_%d/%d\n", dbFile, 'A'+vz, x/64, y/64, index)
 	selectSql := fmt.Sprintf("select Data from %s where ID=%d", tableName, index)
+	log.Print("query clause ", selectSql)
 	rows, err := db.Query(selectSql)
 	if err != nil {
+		log.Print("query error ", err.Error())
 		return nil, fmt.Errorf("EMPTY")
 	}
 	defer rows.Close()

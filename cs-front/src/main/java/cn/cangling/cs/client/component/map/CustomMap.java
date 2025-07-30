@@ -45,6 +45,15 @@ public class CustomMap extends Composite implements RequiresResize {
 
     }
 
+    public Coordinate getCenter() {
+        Coordinate center = map.getView().getCenter();
+        return to4326(center.getX(), center.getY());
+    }
+
+    public double getZoom() {
+        return map.getView().getZoom();
+    }
+
     public Coordinate to3857(double lng, double lat) {
         return Projection.transform(new Coordinate(lng, lat), proj4326, proj3857);
     }
