@@ -30,7 +30,7 @@
     --item-border-radius:6px;
 
     --panel-bk-color: #181818;
-    --panel-border: #E0E0E0;
+    --panel-border: var(--color-4);
     --panel-border-radius: 0px;
 
 

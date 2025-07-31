@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"sync"
+	"time"
 	"unicode/utf8"
 )
 
@@ -187,6 +188,7 @@ func (ac *ApiContext) listRepositoriesHandler(writer http.ResponseWriter, reques
 
 // xyzFileHandler processes requests for XYZ files
 func (ac *ApiContext) xyzFileHandler(writer http.ResponseWriter, request *http.Request) {
+	start := time.Now()
 	vars := mux.Vars(request)
 	fmt.Printf("Received request for XYZ: %v\n", vars)
 	dirName := vars["dir"]
@@ -215,6 +217,8 @@ func (ac *ApiContext) xyzFileHandler(writer http.ResponseWriter, request *http.R
 		}
 		return
 	}
+	end := time.Now()
+	log.Printf("read tile (Nano)%d", end.UnixMilli()-start.UnixMilli())
 	WriteImage(writer, *xyz)
 }
 

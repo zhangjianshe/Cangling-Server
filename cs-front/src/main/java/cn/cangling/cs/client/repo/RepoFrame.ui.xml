@@ -2,15 +2,43 @@
              xmlns:g='urn:import:com.google.gwt.user.client.ui' xmlns:repo="urn:import:cn.cangling.cs.client.repo"
              xmlns:map="urn:import:cn.cangling.cs.client.component.map">
     <ui:style>
-        .p1{
+        @eval COLOR_BORDER "var(--panel-border)";
+        .p1 {
             padding: 10px;
+            border-top: solid 1px COLOR_BORDER;
         }
-        </ui:style>
+
+        .top {
+            margin-bottom: 1rem;
+        }
+        .item{
+            margin: 2px 0;
+        }
+    </ui:style>
     <g:DockLayoutPanel ui:field="root">
         <g:west size="350">
-            <g:ScrollPanel addStyleNames="panel {style.p1}">
-                <repo:RepositoryList width="100%" ui:field="repoList"/>
-            </g:ScrollPanel>
+            <g:DockLayoutPanel addStyleNames="panel">
+                <g:south size="150">
+                    <g:ScrollPanel addStyleNames="{style.p1}">
+                        <g:VerticalPanel width="100%" horizontalAlignment="center">
+                            <g:Label styleName="head {style.top}">基础地图</g:Label>
+                            <g:HTMLPanel styleName="item {style.item}">
+                                <g:CheckBox ui:field="checkTiandiText" checked="true" addStyleNames="text">天地图注记
+                                </g:CheckBox>
+                            </g:HTMLPanel>
+                            <g:HorizontalPanel styleName="item {style.item}">
+                                <g:CheckBox ui:field="checkTiandi" checked="true" addStyleNames="text">天地图卫星影像
+                                </g:CheckBox>
+                            </g:HorizontalPanel>
+                        </g:VerticalPanel>
+                    </g:ScrollPanel>
+                </g:south>
+                <g:center>
+                    <g:ScrollPanel addStyleNames="{style.p1}">
+                        <repo:RepositoryList width="100%" ui:field="repoList"/>
+                    </g:ScrollPanel>
+                </g:center>
+            </g:DockLayoutPanel>
         </g:west>
         <g:center>
             <g:LayoutPanel ui:field="content">
@@ -18,7 +46,7 @@
                     <map:CustomMap ui:field="map"/>
                 </g:layer>
                 <g:layer left="150" right="150" top="30" height="72">
-                    <repo:RepositoryInfoPanel visible="false"  ui:field="repoInfo"/>
+                    <repo:RepositoryInfoPanel visible="false" ui:field="repoInfo"/>
                 </g:layer>
             </g:LayoutPanel>
         </g:center>

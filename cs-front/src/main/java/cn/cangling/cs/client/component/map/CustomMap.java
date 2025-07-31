@@ -1,11 +1,12 @@
 package cn.cangling.cs.client.component.map;
 
+import cn.cangling.cs.client.repo.MapNames;
 import cn.cangling.cs.client.util.Strings;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.RequiresResize;
-import elemental2.dom.DomGlobal;
+import jsinterop.base.Js;
 import ol.*;
 import ol.layer.Layer;
 import ol.proj.Projection;
@@ -74,16 +75,14 @@ public class CustomMap extends Composite implements RequiresResize {
         return layer;
     }
 
-    public Layer addTidiTuiLayerImage(String group) {
+    public Layer addTidiTuiLayerImage(String group,int zIndex) {
         String url = Window.Location.getProtocol() + "//t{0-7}.tianditu.gov.cn/DataServer?T=img_w&x={x}&y={y}&l={z}&tk=4dad0308e0356588887e03a2a91f2e90";
-        DomGlobal.console.log(url);
-        return addXyzLayer(url, group);
+        return addXyzLayer(url, group, MapNames.MAP_TIANDITU_IMG,zIndex);
     }
 
-    public Layer addTidiTuiLayerText(String group) {
+    public Layer addTidiTuiLayerText(String group,int zIndex) {
         String url = Window.Location.getProtocol() + "//t{0-7}.tianditu.gov.cn/DataServer?T=cia_w&x={x}&y={y}&l={z}&tk=4dad0308e0356588887e03a2a91f2e90";
-        DomGlobal.console.log(url);
-        return addXyzLayer(url, group);
+        return addXyzLayer(url, group, MapNames.MAP_TIANDITU_TXT,zIndex);
     }
 
     public void removeLayer(Layer layer) {
@@ -99,25 +98,27 @@ public class CustomMap extends Composite implements RequiresResize {
 
         map.getLayers().forEach((item, index, array) -> {
             if (Strings.isBlank(group)) {
-                if (Strings.isBlank(item.get("groupName"))) {
+                if (Strings.isBlank(Js.asString(item.get("groupName")))) {
                     map.removeLayer(item);
                 }
             } else {
-                if (group.equals(item.get("groupName"))) {
+                if (group.equals(Js.asString(item.get("groupName")))) {
                     map.removeLayer(item);
                 }
             }
         });
     }
 
-    public Layer addXyzLayer(String url, String group) {
+    public Layer addXyzLayer(String url, String groupName, String layerName,int zIndex) {
         ol.layer.Tile layer = new ol.layer.Tile();
 
         XyzOptions xyzOptions = OLFactory.createOptions();
         xyzOptions.setUrl(url);
         Xyz xyz = OLFactory.createXyz(xyzOptions);
-        layer.set("groupName", group);
+        layer.set("groupName", groupName);
+        layer.set("layerName", layerName);
         layer.setSource(xyz);
+        layer.setZIndex(zIndex);
         map.addLayer(layer);
         return layer;
     }
@@ -130,5 +131,36 @@ public class CustomMap extends Composite implements RequiresResize {
     public void moveTo(Double lng, Double lat, Double zoom) {
         map.getView().setCenter(to3857(lng, lat));
         map.getView().setZoom(zoom);
+    }
+
+    public void removeLayerByName(final String groupName, String layerName) {
+        if (Strings.isBlank(layerName)) {
+            return;
+        }
+        map.getLayers().forEach((item, index, array) -> {
+            if (Strings.isBlank(groupName)) {
+                if (layerName.equals(item.get("layerName"))) {
+                    map.removeLayer(item);
+                }
+            } else {
+                if (groupName.equals(item.get("groupName"))
+                        && layerName.equals(item.get("layerName"))
+                ) {
+                    map.removeLayer(item);
+                }
+            }
+        });
+    }
+
+    public Layer addLayerByName(final String groupName, String layerName, int zIndex) {
+        if (Strings.isBlank(layerName)) {
+            return null;
+        }
+        if (MapNames.MAP_TIANDITU_IMG.equals(layerName)) {
+            return addTidiTuiLayerImage(groupName,zIndex);
+        } else if (MapNames.MAP_TIANDITU_TXT.equals(layerName)) {
+            return addTidiTuiLayerText(groupName,zIndex);
+        }
+        return null;
     }
 }
