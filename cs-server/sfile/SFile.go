@@ -34,7 +34,7 @@ func (f *SRepository) GetXYZ(x int64, y int64, z int8) (*bytes.Buffer, error) {
 	}
 	defer db.Close()
 	index := x%64 + 64*(y%64)
-	tableName := fmt.Sprintf("%c_%d_%d", 'A'+vz, x/64, y/64)
+	tableName := fmt.Sprintf("%c_%d_%d", 'A'+z, x/64, y/64)
 	//log.Printf("%s/%c_%d_%d/%d\n", dbFile, 'A'+vz, x/64, y/64, index)
 	selectSql := fmt.Sprintf("select Data from %s where ID=%d", tableName, index)
 	log.Print("query clause ", selectSql)
