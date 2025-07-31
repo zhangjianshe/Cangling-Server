@@ -85,15 +85,21 @@ func WriteError(writer http.ResponseWriter, code int, message string) {
 }
 
 // WriteImage writes an image buffer as a PNG response (moved here)
-func WriteImage(writer http.ResponseWriter, buffer bytes.Buffer) {
+func WriteImage(writer http.ResponseWriter, buffer bytes.Buffer, cacheTime time.Duration) {
 	writer.Header().Set("Content-Type", "image/png")
 	writer.WriteHeader(http.StatusOK)
 	writer.Header().Set("Content-Length", strconv.Itoa(len(buffer.Bytes())))
+	if cacheTime > 0 {
+		writer.Header().Set("Cache-Control", "public,max-age="+cacheTime.String())
+	}
 	_, _ = writer.Write(buffer.Bytes())
 }
-func WriteBytes(writer http.ResponseWriter, contentType string, buffer []byte) {
+func WriteBytes(writer http.ResponseWriter, contentType string, buffer []byte, cacheTime time.Duration) {
 	writer.Header().Set("Content-Type", contentType)
 	writer.WriteHeader(http.StatusOK)
+	if cacheTime > 0 {
+		writer.Header().Set("Cache-Control", "public,max-age="+cacheTime.String())
+	}
 	writer.Header().Set("Content-Length", strconv.Itoa(len(buffer)))
 	_, _ = writer.Write(buffer)
 }
@@ -200,7 +206,7 @@ func (ac *ApiContext) xyzFileHandler(writer http.ResponseWriter, request *http.R
 	if err != nil {
 		// Use ac.CanvasContext
 		fmt.Println("not find repository,", err.Error())
-		WriteBytes(writer, "image/png", NewSFile.ErrorTile)
+		WriteBytes(writer, "image/png", NewSFile.ErrorTile, 0)
 		return
 	}
 	intx, _ := strconv.ParseInt(x, 10, 64)
@@ -211,15 +217,15 @@ func (ac *ApiContext) xyzFileHandler(writer http.ResponseWriter, request *http.R
 	if err != nil {
 		buffer, err1 := ac.CanvasContext.CreateImage(256, 256, image.Transparent, image.White, err.Error())
 		if err1 != nil {
-			WriteBytes(writer, "image/png", NewSFile.ErrorTile)
+			WriteBytes(writer, "image/png", NewSFile.ErrorTile, 0)
 		} else {
-			WriteImage(writer, buffer)
+			WriteImage(writer, buffer, 0)
 		}
 		return
 	}
 	end := time.Now()
 	log.Printf("read tile (Nano)%d", end.UnixMilli()-start.UnixMilli())
-	WriteImage(writer, *xyz)
+	WriteImage(writer, *xyz, 31536000)
 }
 
 // serverInfoHandler provides information about the server
